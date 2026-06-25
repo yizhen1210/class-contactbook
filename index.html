@@ -71,7 +71,7 @@
         .tag.y { color: #bb482f; border-color: #bb482f; padding-bottom: 0.05em; }
         .tag.m { color: #c57249; border-color: #c57249; padding-bottom: 0.12em; }
         .tag.d { color: #8f7a60; border-color: #8f7a60; padding-bottom: 0.12em; }
-        .tag.wk { color: #05798c; border-color: #05798c; border-radius: 12px; height: 1.5em; padding: 0 0.28em; display: inline-flex; align-items: center; }
+        .tag.wk { color: #05798c; border-color: #05798c; border-radius: 0.7em; height: 1.5em; padding: 0 0.2em; display: inline-flex; align-items: center; }
         .wkwrap { display: inline-flex; align-items: center; gap: 3px; margin-left: 4px; }
         .wd { color: #fff; font-weight: bold; -webkit-text-stroke: 0.5px #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.28); }
         .date-stamp { margin-left: auto; color: var(--chalk-dim); font-size: 16px; }
@@ -174,7 +174,7 @@
         }
 
         /* ===== 投影模式(按鈕切換,不靠寬度) ===== */
-        .cast-mode .frame { max-width: none; border-left-width: 18px; border-right-width: 18px; padding: 30px 64px 0; justify-content: center; }
+        .cast-mode .frame { max-width: none; border-left-width: 18px; border-right-width: 18px; padding: 9vh 64px 0; justify-content: flex-start; }
         .cast-mode .admin, .cast-mode .logout-btn, .cast-mode .edit-pencil, .cast-mode .cast-btn, .cast-mode .credit, .cast-mode .header { display: none !important; }
         .cast-mode .date-row { padding: 0 2px 22px; gap: 16px; font-size: var(--castItem, 54px); }
         .cast-mode .date-stamp { font-size: 0.42em; }
@@ -182,7 +182,7 @@
         .cast-mode .items li { padding: calc(var(--castItem, 54px) * 0.18) 2px; gap: 22px; }
         .cast-mode .items .circle { width: calc(var(--castItem, 54px) * 1.4); height: calc(var(--castItem, 54px) * 1.4); font-size: var(--castItem, 54px); }
         .cast-mode .items .txt { font-size: var(--castItem, 54px); }
-        .cast-mode .chalk-tray { margin-top: 16px; height: 18px; }
+        .cast-mode .chalk-tray { margin-top: auto; height: 18px; }
         .cast-mode .cast-exit { display: flex; align-items: center; justify-content: center; }
 
         /* ===== RWD:手機(≤640) ===== */
@@ -434,12 +434,17 @@
             const dr=document.querySelector('.date-row');
             const ul=document.querySelector('.items');
             const tray=document.querySelector('.chalk-tray');
-            if(!dr || !ul) return;
-            let size=100;
+            const frame=document.querySelector('.frame');
+            if(!dr || !ul || !frame) return;
+            const realN=Math.max(ul.querySelectorAll('li').length, 1);
+            const refN=Math.max(realN, 7);   // always size as if there were at least 7 rows
+            let size=120;
             html.style.setProperty('--castItem', size+'px');
-            for(let i=0;i<60;i++){
-                const need = dr.offsetHeight + ul.offsetHeight + (tray?tray.offsetHeight:0) + 92;
-                if(need <= window.innerHeight || size<=24) break;
+            for(let i=0;i<70;i++){
+                const topGap=parseFloat(getComputedStyle(frame).paddingTop)||0;
+                const refItems=ul.offsetHeight*(refN/realN);
+                const need=topGap + dr.offsetHeight + refItems + (tray?tray.offsetHeight:0) + 28;
+                if(need <= window.innerHeight || size<=22) break;
                 size-=4; html.style.setProperty('--castItem', size+'px');
             }
         }
