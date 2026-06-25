@@ -103,16 +103,18 @@
         .admin { background: var(--board-2); border: 1px solid rgba(244,241,232,0.25); border-radius: 14px; padding: 20px 22px; margin: 18px 0 4px; }
         .admin-title { color: #ffe6b0; font-size: 1.45em; margin: 0 0 4px; }
         .admin-sub { color: var(--chalk-dim); font-size: 0.95em; margin: 0 0 16px; }
-        .subj-block { border-bottom: 1px solid rgba(244,241,232,0.14); }
-        .subj-head { display: flex; align-items: center; gap: 12px; padding: 12px 0; cursor: pointer; }
-        .subj-head input[type=checkbox] { width: 22px; height: 22px; accent-color: var(--p-day); }
-        .subj-name { font-size: 1.2em; color: var(--chalk); }
-        .subj-body { display: none; padding: 2px 0 14px 32px; }
-        .subj-block.on .subj-body { display: block; }
-        .hw-line { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+        .hw-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 0; border-bottom: 1px solid rgba(244,241,232,0.12); }
+        .hw-on { width: 24px; height: 24px; accent-color: var(--p-day); flex: none; cursor: pointer; }
+        .hw-subj { height: 42px; border-radius: 10px; background: rgba(255,255,255,0.07); border: 1px solid rgba(244,241,232,0.4); color: var(--chalk); font-family: inherit; font-size: 1em; padding: 0 8px; cursor: pointer; }
+        .hw-subj option { color: #233; }
         .hw-field { display: inline-flex; align-items: center; gap: 6px; font-size: 1em; color: var(--chalk-dim); }
         .add-line-btn { border: 1px dashed var(--chalk); background: transparent; color: var(--chalk); padding: 9px 16px; border-radius: 10px; font-family: inherit; font-size: 1em; cursor: pointer; }
         .add-line-btn:hover { background: rgba(244,241,232,0.12); }
+        .chk-grid { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-bottom: 4px; }
+        .chk-pill { display: inline-flex; align-items: center; gap: 8px; color: var(--chalk); font-size: 1.08em; cursor: pointer; padding: 6px 2px; }
+        .chk-pill input[type=checkbox] { width: 21px; height: 21px; accent-color: var(--p-day); }
+        .exam-sub { margin-bottom: 8px; }
+        .exam-label { color: var(--chalk-dim); font-size: 0.95em; margin: 6px 0 2px; }
         .input { background: rgba(255,255,255,0.07); border: 1px solid rgba(244,241,232,0.4); border-radius: 10px; font-family: inherit; color: var(--chalk); }
         .field .input { width: 64px; height: 40px; text-align: center; font-size: 1.1em; }
         .input:focus { outline: none; border-color: var(--chalk); box-shadow: 0 0 0 3px rgba(244,241,232,0.18); }
@@ -206,7 +208,6 @@
             .items .txt { font-size: 21px; }
             .chalk-tray { height: 16px; }
             .credit { padding: 10px 0 14px; }
-            .subj-body { padding-left: 14px; }
             .input.hw-type { flex: 1 1 100%; }
             .publish-bar { flex-direction: column; align-items: stretch; }
             .btn-publish, .btn-ghost { width: 100%; }
@@ -227,12 +228,22 @@
 
     <!-- 老師編輯區 -->
     <div id="adminArea" class="admin admin-only hidden">
-        <h2 class="admin-title">各科作業</h2>
-        <p class="admin-sub">勾選今天有作業的科目，展開後可新增多項作業；每項可填 L課數與頁數（頁數填起、迄會自動展開成連續多頁）</p>
-        <div id="subjList"></div>
+        <h2 class="admin-title">書寫作業</h2>
+        <p class="admin-sub">勾選要列入聯絡簿的作業；每項可選科目、填 L 課數與頁數（頁數填起、迄會自動展開連續多頁）</p>
+        <div id="hwList"></div>
+        <button class="add-line" id="addHw">＋ 新增作業</button>
+
+        <h2 class="admin-title" style="margin-top:24px;">習作簽名</h2>
+        <div id="catWb" class="chk-grid"></div>
+
+        <h2 class="admin-title" style="margin-top:20px;">考試訂簽</h2>
+        <div id="catReview" class="chk-grid"></div>
+
+        <h2 class="admin-title" style="margin-top:20px;">考試</h2>
+        <div id="catExam"></div>
 
         <h2 class="admin-title" style="margin-top:24px;">其他事項</h2>
-        <p class="admin-sub">臨時、非固定的項目，如帶物品、簽名</p>
+        <p class="admin-sub">臨時、非固定的項目，如帶物品</p>
         <div id="extraList"></div>
         <button class="add-line" id="addExtra">＋ 新增一項</button>
 
@@ -287,18 +298,24 @@
         const bookRef = doc(db, 'config', 'contactBook');
 
         const WEEKDAYS = ["日","一","二","三","四","五","六"];
-        const DEFAULT_SUBJECTS = [
-            {id:"chi", name:"國語", enabled:true,  lines:[{id:"c1", type:"習作", lesson:"", pStart:"", pEnd:""}]},
-            {id:"mat", name:"數學", enabled:true,  lines:[{id:"m1", type:"課本", lesson:"", pStart:"", pEnd:""}]},
-            {id:"sci", name:"自然", enabled:false, lines:[{id:"n1", type:"習作", lesson:"", pStart:"", pEnd:""}]},
-            {id:"soc", name:"社會", enabled:false, lines:[{id:"o1", type:"課本", lesson:"", pStart:"", pEnd:""}]},
-            {id:"eng", name:"英文", enabled:false, lines:[{id:"e1", type:"", lesson:"", pStart:"", pEnd:""}]}
+        const SUBJ_OPTIONS = [{id:"chi",name:"國語"},{id:"mat",name:"數學"},{id:"sci",name:"自然"},{id:"soc",name:"社會"},{id:"eng",name:"英文"},{id:"etc",name:"其他"}];
+        const SUBJ_ORDER = {chi:0, mat:1, sci:2, soc:3, eng:4, etc:5};
+        const DEFAULT_HW = [
+            {id:"h1", subj:"chi", name:"習作", lesson:"", pStart:"", pEnd:"", on:false},
+            {id:"h2", subj:"mat", name:"課本", lesson:"", pStart:"", pEnd:"", on:false}
         ];
-        const DEFAULT_EXTRAS = ["帶大袋子","受試者同意書簽名"];
+        // 固定勾選大項(依發布順序)
+        const CAT_WB     = [{key:"wb_chi",label:"國習",text:"國語習作簽名"},{key:"wb_mat",label:"數習",text:"數學習作簽名"}];
+        const CAT_REVIEW = [{key:"rv_chi",label:"國",text:"國語考試訂簽"},{key:"rv_mat",label:"數",text:"數學考試訂簽"},{key:"rv_sci",label:"自",text:"自然考試訂簽"},{key:"rv_soc",label:"社",text:"社會考試訂簽"},{key:"rv_eng",label:"英",text:"英文考試訂簽"}];
+        const CAT_QUIZ   = [{key:"q_chi",label:"國",text:"國語小考"},{key:"q_mat",label:"數",text:"數學小考"},{key:"q_sci",label:"自",text:"自然小考"},{key:"q_soc",label:"社",text:"社會小考"},{key:"q_eng",label:"英",text:"英文小考"}];
+        const CAT_TERM   = [{key:"e_chisci",label:"國＋自",text:"國語、自然段考"},{key:"e_matsoc",label:"數＋社",text:"數學、社會段考"},{key:"e_eng",label:"英",text:"英文段考"}];
+        const CAT_FLAT   = [...CAT_WB, ...CAT_REVIEW, ...CAT_QUIZ, ...CAT_TERM];
+        const DEFAULT_EXTRAS = ["帶大袋子"];
 
         let isTeacher = false;
         let editorReady = false;
-        let subjects = JSON.parse(JSON.stringify(DEFAULT_SUBJECTS));
+        let hwEntries = JSON.parse(JSON.stringify(DEFAULT_HW));
+        let checks = {};
         let extras = DEFAULT_EXTRAS.slice();
         let className = "508";
 
@@ -310,22 +327,22 @@
             const arr=[]; for(let i=a;i<=b;i++) arr.push(i);
             return arr.join("、");
         }
-        function lineToText(ln){
+        function entryToText(e){
             const parts=[];
-            if(ln.type && String(ln.type).trim()) parts.push(String(ln.type).trim());
-            if(ln.lesson!=null && String(ln.lesson).trim()!=="") parts.push("L"+String(ln.lesson).trim());
-            const pg=pagesText(ln.pStart, ln.pEnd);
+            if(e.name && String(e.name).trim()) parts.push(String(e.name).trim());
+            if(e.lesson!=null && String(e.lesson).trim()!=="") parts.push("L"+String(e.lesson).trim());
+            const pg=pagesText(e.pStart, e.pEnd);
             if(pg) parts.push("p."+pg);
             return parts.join(" ");
         }
         function buildItems(){
-            const arr=[];
-            subjects.filter(s=>s.enabled).forEach(s=>{
-                const strs=(s.lines||[]).map(lineToText).filter(x=>x);
-                if(strs.length) arr.push(s.name+"："+strs.join("、"));
-            });
-            extras.forEach(t=>{ if(t&&t.trim()) arr.push(t.trim()); });
-            return arr;
+            const out=[];
+            hwEntries.map((e,i)=>({e,i})).filter(o=>o.e.on)
+                .sort((a,b)=> (SUBJ_ORDER[a.e.subj]??9)-(SUBJ_ORDER[b.e.subj]??9) || a.i-b.i)
+                .forEach(o=>{ const t=entryToText(o.e); if(t) out.push(t); });
+            CAT_FLAT.forEach(it=>{ if(checks[it.key]) out.push(it.text); });
+            extras.forEach(t=>{ if(t&&t.trim()) out.push(t.trim()); });
+            return out;
         }
         function rocParts(){ const n=new Date(); return {y:n.getFullYear()-1911,m:n.getMonth()+1,d:n.getDate(),w:WEEKDAYS[n.getDay()]}; }
         function esc(s){ return String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
@@ -344,33 +361,37 @@
             requestAnimationFrame(fitCast);
         }
 
-        function hwLineHtml(sid, ln){
-            return `<div class="hw-line">`
-                + `<input class="input hw-type" placeholder="作業，如 習作 / 課本 / 甲本" value="${esc(ln.type||"")}" data-sid="${sid}" data-lid="${ln.id}" data-k="type">`
-                + `<span class="hw-field">L<input class="input hw-num" type="number" min="1" step="1" value="${esc(ln.lesson||"")}" data-sid="${sid}" data-lid="${ln.id}" data-k="lesson"></span>`
-                + `<span class="hw-field">p.<input class="input hw-num" type="number" min="1" step="1" value="${esc(ln.pStart||"")}" data-sid="${sid}" data-lid="${ln.id}" data-k="pStart"> ～ <input class="input hw-num" type="number" min="1" step="1" value="${esc(ln.pEnd||"")}" data-sid="${sid}" data-lid="${ln.id}" data-k="pEnd"></span>`
-                + `<button class="rowbtn" data-del-line="${sid}::${ln.id}">刪除</button>`
+        function pillsHtml(items){
+            return items.map(it=> `<label class="chk-pill"><input type="checkbox" data-cat="${it.key}" ${checks[it.key]?'checked':''}>${esc(it.label)}</label>`).join('');
+        }
+        function hwRowHtml(e){
+            const opts = SUBJ_OPTIONS.map(s=>`<option value="${s.id}" ${e.subj===s.id?'selected':''}>${esc(s.name)}</option>`).join('');
+            return `<div class="hw-row">`
+                + `<input type="checkbox" class="hw-on" data-hw="${e.id}" data-k="on" ${e.on?'checked':''}>`
+                + `<select class="hw-subj" data-hw="${e.id}" data-k="subj">${opts}</select>`
+                + `<input class="input hw-type" placeholder="作業名稱，如 習作 / 課本 / 甲本" value="${esc(e.name||'')}" data-hw="${e.id}" data-k="name">`
+                + `<span class="hw-field">L<input class="input hw-num" type="number" min="1" step="1" value="${esc(e.lesson||'')}" data-hw="${e.id}" data-k="lesson"></span>`
+                + `<span class="hw-field">p.<input class="input hw-num" type="number" min="1" step="1" value="${esc(e.pStart||'')}" data-hw="${e.id}" data-k="pStart"> ～ <input class="input hw-num" type="number" min="1" step="1" value="${esc(e.pEnd||'')}" data-hw="${e.id}" data-k="pEnd"></span>`
+                + `<button class="rowbtn" data-del-hw="${e.id}">刪除</button>`
                 + `</div>`;
         }
         function renderEditor(){
-            $('subjList').innerHTML = subjects.map(s=>{
-                const lines=(s.lines||[]).map(ln=>hwLineHtml(s.id, ln)).join('');
-                return `<div class="subj-block ${s.enabled?'on':''}">`
-                    + `<label class="subj-head"><input type="checkbox" data-sid="${s.id}" data-toggle="1" ${s.enabled?'checked':''}><span class="subj-name">${esc(s.name)}</span></label>`
-                    + `<div class="subj-body">${lines}<button class="add-line-btn" data-add-line="${s.id}">＋ 新增作業</button></div>`
-                    + `</div>`;
-            }).join('');
+            $('hwList').innerHTML = hwEntries.map(hwRowHtml).join('');
+            $('catWb').innerHTML = pillsHtml(CAT_WB);
+            $('catReview').innerHTML = pillsHtml(CAT_REVIEW);
+            $('catExam').innerHTML = `<div class="exam-sub"><div class="exam-label">小考</div><div class="chk-grid">${pillsHtml(CAT_QUIZ)}</div></div>`
+                + `<div class="exam-sub"><div class="exam-label">段考</div><div class="chk-grid">${pillsHtml(CAT_TERM)}</div></div>`;
             $('extraList').innerHTML = extras.map((t,i)=>
                 `<div class="extra-row"><input class="input" value="${esc(t)}" data-ex="${i}" placeholder="輸入事項，如 帶大袋子"><button class="rowbtn" data-del-ex="${i}">刪除</button></div>`
             ).join('');
         }
 
         let saveTimer = null;
-        function saveConfig(){ clearTimeout(saveTimer); saveTimer=setTimeout(()=>{ setDoc(bookRef,{subjects,extras,className},{merge:true}).catch(e=>console.warn(e)); },700); }
+        function saveConfig(){ clearTimeout(saveTimer); saveTimer=setTimeout(()=>{ setDoc(bookRef,{hwEntries,checks,extras,className},{merge:true}).catch(e=>console.warn(e)); },700); }
         async function publish(){
             const dp = rocParts(); const now = new Date();
             const label = `${dp.y}/${dp.m}/${dp.d} ${now.getHours()}:${("0"+now.getMinutes()).slice(-2)}`;
-            try{ await setDoc(bookRef,{subjects,extras,className,published:{items:buildItems(),date:dp,label}},{merge:true}); $('pubStamp').textContent="已發布 · "+label; }
+            try{ await setDoc(bookRef,{hwEntries,checks,extras,className,published:{items:buildItems(),date:dp,label}},{merge:true}); $('pubStamp').textContent="已發布 · "+label; }
             catch(e){ alert("發布失敗，請確認已登入且 Firestore 規則允許寫入"); console.warn(e); }
         }
 
@@ -380,7 +401,8 @@
                 if(data.className){ className=data.className; $('className').innerText=className; }
                 renderPublished(data.published || null);
                 if(isTeacher && !editorReady){
-                    if(Array.isArray(data.subjects) && data.subjects.length && data.subjects[0] && Array.isArray(data.subjects[0].lines)) subjects=data.subjects;
+                    if(Array.isArray(data.hwEntries)) hwEntries=data.hwEntries;
+                    if(data.checks && typeof data.checks==='object') checks=data.checks;
                     if(Array.isArray(data.extras)) extras=data.extras;
                     editorReady=true; renderEditor();
                 }
@@ -420,21 +442,24 @@
         }
         onAuthStateChanged(auth, (user)=>{ isTeacher=!!user; applyTeacherUI(); });
 
+        function findHw(id){ return hwEntries.find(x=>x.id===id); }
         document.addEventListener('input', e=>{
             const t=e.target;
-            if(t.dataset.lid && t.dataset.k){ const s=subjects.find(x=>x.id===t.dataset.sid); if(s){ const ln=(s.lines||[]).find(l=>l.id===t.dataset.lid); if(ln){ ln[t.dataset.k]=t.value; saveConfig(); } } }
+            if(t.dataset.hw && t.dataset.k){ const en=findHw(t.dataset.hw); if(en){ en[t.dataset.k]=t.value; saveConfig(); } }
             if(t.dataset.ex!=null){ extras[+t.dataset.ex]=t.value; saveConfig(); }
         });
         document.addEventListener('change', e=>{
             const t=e.target;
-            if(t.dataset.sid && t.dataset.toggle){ const s=subjects.find(x=>x.id===t.dataset.sid); if(s){ s.enabled=t.checked; renderEditor(); saveConfig(); } }
+            if(t.dataset.hw && t.dataset.k==='on'){ const en=findHw(t.dataset.hw); if(en){ en.on=t.checked; saveConfig(); } }
+            else if(t.dataset.hw && t.dataset.k==='subj'){ const en=findHw(t.dataset.hw); if(en){ en.subj=t.value; saveConfig(); } }
+            if(t.dataset.cat){ checks[t.dataset.cat]=t.checked; saveConfig(); }
         });
         document.addEventListener('click', e=>{
             const t=e.target;
-            if(t.dataset.addLine){ const s=subjects.find(x=>x.id===t.dataset.addLine); if(s){ (s.lines=s.lines||[]).push({id:"l"+Date.now(),type:"",lesson:"",pStart:"",pEnd:""}); renderEditor(); saveConfig(); } }
-            if(t.dataset.delLine){ const p=t.dataset.delLine.split("::"); const s=subjects.find(x=>x.id===p[0]); if(s){ s.lines=(s.lines||[]).filter(l=>l.id!==p[1]); renderEditor(); saveConfig(); } }
+            if(t.dataset.delHw){ hwEntries=hwEntries.filter(x=>x.id!==t.dataset.delHw); renderEditor(); saveConfig(); }
             if(t.dataset.delEx!=null){ extras.splice(+t.dataset.delEx,1); renderEditor(); saveConfig(); }
         });
+        $('addHw').onclick = ()=>{ hwEntries.push({id:"h"+Date.now(),subj:"chi",name:"",lesson:"",pStart:"",pEnd:"",on:true}); renderEditor(); saveConfig(); };
         $('addExtra').onclick = ()=>{ extras.push(""); renderEditor(); saveConfig(); };
         $('publishBtn').onclick = publish;
         $('copyLink').onclick = ()=>{
