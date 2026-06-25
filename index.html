@@ -25,7 +25,7 @@
             --wood-dark: #756950;
             --p-year: #c3452d;
             --p-month: #c87646;
-            --p-day: #00798e;
+            --p-day: #05798e;
             --del-color: #c4674f;
         }
         * { box-sizing: border-box; }
@@ -68,10 +68,10 @@
         .date-row .num { color: #fff; font-weight: bold; -webkit-text-stroke: 0.5px #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.28); }
         .tag { font-size: 1em; line-height: 1; background: #f1f0e9; border: 2px solid; font-weight: bold; -webkit-text-stroke: 0.5px currentColor; }
         .tag.y, .tag.m, .tag.d { display: inline-flex; align-items: center; justify-content: center; width: 1.5em; height: 1.5em; border-radius: 50%; }
-        .tag.y { color: #c3452d; border-color: #c3452d; }
-        .tag.m { color: #c87646; border-color: #c87646; }
-        .tag.d { color: #00798e; border-color: #00798e; }
-        .tag.wk { color: #027990; border-color: #027990; border-radius: 12px; height: 1.5em; padding: 0 0.45em; display: inline-flex; align-items: center; }
+        .tag.y { color: #bb482f; border-color: #bb482f; padding-bottom: 0.05em; }
+        .tag.m { color: #c57249; border-color: #c57249; padding-bottom: 0.12em; }
+        .tag.d { color: #8f7a60; border-color: #8f7a60; padding-bottom: 0.12em; }
+        .tag.wk { color: #05798c; border-color: #05798c; border-radius: 12px; height: 1.5em; padding: 0 0.28em; display: inline-flex; align-items: center; }
         .wkwrap { display: inline-flex; align-items: center; gap: 3px; margin-left: 4px; }
         .wd { color: #fff; font-weight: bold; -webkit-text-stroke: 0.5px #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.28); }
         .date-stamp { margin-left: auto; color: var(--chalk-dim); font-size: 16px; }
@@ -435,12 +435,12 @@
             const ul=document.querySelector('.items');
             const tray=document.querySelector('.chalk-tray');
             if(!dr || !ul) return;
-            let size=56;
+            let size=100;
             html.style.setProperty('--castItem', size+'px');
-            for(let i=0;i<70;i++){
+            for(let i=0;i<60;i++){
                 const need = dr.offsetHeight + ul.offsetHeight + (tray?tray.offsetHeight:0) + 92;
-                if(need <= window.innerHeight || size<=20) break;
-                size-=2; html.style.setProperty('--castItem', size+'px');
+                if(need <= window.innerHeight || size<=24) break;
+                size-=4; html.style.setProperty('--castItem', size+'px');
             }
         }
         function setCast(on){
