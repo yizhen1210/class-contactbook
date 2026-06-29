@@ -472,7 +472,13 @@
                     + `<div class="acc-body">${body}</div></div>`;
             }).join('');
         }
-        function secHead(sec, label){ const open=openSec[sec]; return `<h2 class="sec-title" data-sec="${sec}"><span class="acc-arrow">${open?'▾':'▸'}</span>${label}</h2>`; }
+        function secCount(sec){
+            if(sec==="wb") return ["chi","mat"].filter(s=>wbSign[s]&&wbSign[s].on).length;
+            if(sec==="rv") return reviewEntries.filter(e=>e.on).length + (rvChi.on?1:0);
+            if(sec==="ex") return examEntries.filter(e=>e.on).length;
+            return 0;
+        }
+        function secHead(sec, label){ const open=openSec[sec]; const c=secCount(sec); return `<h2 class="sec-title" data-sec="${sec}"><span class="acc-arrow">${open?'▾':'▸'}</span>${label}${c?`<span class="acc-badge">${c}</span>`:''}</h2>`; }
         function clearAllChecks(){
             hwEntries.forEach(e=>e.on=false);
             Object.values(chiPresets).forEach(p=>p.on=false);
@@ -585,15 +591,16 @@
             if(t.dataset.ex!=null){ extras[+t.dataset.ex]=t.value; saveConfig(); }
         });
         document.addEventListener('change', e=>{
-            const t=e.target;
+            const t=e.target; let reRender=false;
             if(t.dataset.f){ const p=t.dataset.f.split(':'); const en=findE(p[0],p[1]); if(en){ en[p[2]]=t.value; saveConfig(); } }
             if(t.dataset.cps){ const p=t.dataset.cps.split(':'); chiPresets[p[0]][p[1]]=t.value; saveConfig(); }
-            if(t.dataset.cpon){ chiPresets[t.dataset.cpon].on=t.checked; saveConfig(); }
-            if(t.dataset.mpon){ matPresets[t.dataset.mpon].on=t.checked; saveConfig(); }
-            if(t.hasAttribute && t.hasAttribute('data-rvcon')){ rvChi.on=t.checked; saveConfig(); }
-            if(t.dataset.on){ const p=t.dataset.on.split(':'); const en=findE(p[0],p[1]); if(en){ en.on=t.checked; saveConfig(); } }
-            if(t.dataset.wbon){ const s=t.dataset.wbon; wbSign[s]=wbSign[s]||{}; wbSign[s].on=t.checked; saveConfig(); }
+            if(t.dataset.cpon){ chiPresets[t.dataset.cpon].on=t.checked; saveConfig(); reRender=true; }
+            if(t.dataset.mpon){ matPresets[t.dataset.mpon].on=t.checked; saveConfig(); reRender=true; }
+            if(t.hasAttribute && t.hasAttribute('data-rvcon')){ rvChi.on=t.checked; saveConfig(); reRender=true; }
+            if(t.dataset.on){ const p=t.dataset.on.split(':'); const en=findE(p[0],p[1]); if(en){ en.on=t.checked; saveConfig(); reRender=true; } }
+            if(t.dataset.wbon){ const s=t.dataset.wbon; wbSign[s]=wbSign[s]||{}; wbSign[s].on=t.checked; saveConfig(); reRender=true; }
             if(t.id==="timingSel"){ examTiming=t.value; saveConfig(); }
+            if(reRender) renderEditor();
         });
         document.addEventListener('click', e=>{
             const secT=e.target.closest('.sec-title');
