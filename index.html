@@ -146,17 +146,20 @@
 
         /* 登入框 */
         .hidden { display: none !important; }
+        body:not(.ready) #className,
+        body:not(.ready) #dateRow,
+        body:not(.ready) #itemList { visibility: hidden; }
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); align-items: center; justify-content: center; z-index: 1000; }
         .modal-content { background: #fff; border: 3px solid var(--wood); padding: 36px 44px; border-radius: 20px; text-align: center; box-shadow: 0 20px 55px rgba(0,0,0,0.4), 0 0 50px 8px rgba(232,130,12,0.13); width: min(520px, 90vw); }
         .modal-title { font-size: 1.4em; color: #3f514a; margin: 0 0 22px; }
         .modal-content input { display: block; width: 100%; margin: 0 0 24px; padding: 12px 18px; border: 2px solid #05798c; border-radius: 14px; font-family: inherit; font-size: 1.1em; outline: none; text-align: center; background: #fff; color: #2e3a35; }
-        .modal-content input:focus { border-color: #05798c; box-shadow: 0 0 12px 3px rgba(5,121,140,0.5); }
+        .modal-content input:focus { border-color: #05798c; box-shadow: 0 0 12px 3px rgba(5,121,140,0.38); }
         .modal-content input::placeholder { color: #9aa39d; }
         .modal-actions { display: flex; justify-content: center; gap: 18px; }
         .modal-actions button { padding: 11px 38px; border-radius: 50px; cursor: pointer; font-family: inherit; font-size: 1.15em; border: 2px solid #05798c; }
         .modal-actions .btn-ok { background: #05798c; color: #fff; }
         .modal-actions .btn-ok:hover { background: #066a7b; }
-        .modal-actions .btn-cancel { background: #eaf4f6; color: #05798c; border-color: #05798c; }
+        .modal-actions .btn-cancel { background: #f2f8f9; color: #05798c; border-color: #05798c; }
         .modal-actions .btn-cancel:hover { background: #05798c; color: #fff; }
 
         /* 投影按鈕 */
@@ -222,7 +225,7 @@
 <body>
   <div class="frame">
     <div class="header">
-        <h1><span class="bag">🍎</span><span class="num" id="className">508</span><button id="editClassBtn" class="edit-pencil admin-only hidden" title="更新班級">✏️</button><span>班級聯絡簿</span></h1>
+        <h1><span class="bag">🍎</span><span class="num" id="className"></span><button id="editClassBtn" class="edit-pencil admin-only hidden" title="更新班級">✏️</button><span>班級聯絡簿</span></h1>
         <span style="display:flex; gap:12px; align-items:center;">
             <button id="castBtn" class="cast-btn">投影模式</button>
             <button id="logoutBtn" class="logout-btn admin-only hidden">登出</button>
@@ -534,15 +537,19 @@
             }
             editorReady=true; renderEditor();
         }
+        function markReady(){ document.body.classList.add('ready'); }
+        setTimeout(markReady, 4000);
         onSnapshot(bookRef, (snap)=>{
             const data = snap.exists() ? snap.data() : null;
             lastData = data;
             if(data){
-                if(data.className){ className=data.className; $('className').innerText=className; }
+                if(data.className){ className=data.className; }
+                $('className').innerText=className;
                 renderPublished(data.published || null);
                 if(isTeacher && !editorReady) loadEditorFrom(data);
-            } else { renderPublished(null); }
-        }, err=>{ console.warn(err); renderPublished(null); });
+            } else { $('className').innerText=className; renderPublished(null); }
+            markReady();
+        }, err=>{ console.warn(err); $('className').innerText=className; renderPublished(null); markReady(); });
 
         // 兩位老師共用同一組編輯帳號:email 寫死在這裡,老師只需輸入密碼。把下面換成你那組共用編輯帳號的 email。
         const SHARED_EMAIL = "annychen1210@gmail.com";
