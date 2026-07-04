@@ -161,17 +161,17 @@
         .modal-input:focus { box-shadow: 0 0 10px 2px rgba(5,121,140,0.35); }
         .m-ok:active, .m-no:active { transform: translateY(1px); }
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); align-items: center; justify-content: center; z-index: 1000; }
-        .modal-content { background: #fff; border: 3px solid var(--wood); padding: 36px 44px; border-radius: 20px; text-align: center; box-shadow: 0 20px 55px rgba(0,0,0,0.4), 0 0 50px 8px rgba(232,130,12,0.13); width: min(520px, 90vw); }
+        .modal-content { background: #fff; border: 3px solid var(--p-day); padding: 36px 44px; border-radius: 20px; text-align: center; box-shadow: 0 20px 55px rgba(0,0,0,0.4), 0 0 50px 8px rgba(5,121,142,0.13); width: min(520px, 90vw); }
         .modal-title { font-size: 1.4em; color: #3f514a; margin: 0 0 22px; }
-        .modal-content input { display: block; width: 100%; margin: 0 0 24px; padding: 12px 18px; border: 2px solid #05798c; border-radius: 14px; font-family: inherit; font-size: 1.1em; outline: none; text-align: center; background: #fff; color: #2e3a35; }
-        .modal-content input:focus { border-color: #05798c; box-shadow: 0 0 12px 3px rgba(5,121,140,0.38); }
+        .modal-content input { display: block; width: 100%; margin: 0 0 24px; padding: 12px 18px; border: 2px solid var(--chalk-dim); border-radius: 14px; font-family: inherit; font-size: 1.1em; outline: none; text-align: center; background: #fff; color: #2e3a35; }
+        .modal-content input:focus { border-color: var(--p-day); box-shadow: 0 0 12px 3px rgba(5,121,142,0.5); }
         .modal-content input::placeholder { color: #9aa39d; }
         .modal-actions { display: flex; justify-content: center; gap: 18px; }
-        .modal-actions button { padding: 11px 38px; border-radius: 50px; cursor: pointer; font-family: inherit; font-size: 1.15em; border: 2px solid #05798c; }
-        .modal-actions .btn-ok { background: #05798c; color: #fff; }
-        .modal-actions .btn-ok:hover { background: #066a7b; }
-        .modal-actions .btn-cancel { background: #f2f8f9; color: #05798c; border-color: #05798c; }
-        .modal-actions .btn-cancel:hover { background: #05798c; color: #fff; }
+        .modal-actions button { padding: 11px 38px; border-radius: 50px; cursor: pointer; font-family: inherit; font-size: 1.15em; border: 2px solid var(--p-day); }
+        .modal-actions .btn-ok { background: var(--p-day); color: #fff; }
+        .modal-actions .btn-ok:hover { background: #04697c; }
+        .modal-actions .btn-cancel { background: rgba(5,121,142,0.10); color: var(--p-day); border-color: var(--p-day); }
+        .modal-actions .btn-cancel:hover { background: var(--p-day); color: #fff; }
 
         /* 投影按鈕 */
         .cast-btn { background: transparent; color: var(--chalk); border: 2px solid var(--chalk); padding: 9px 20px; border-radius: 50px; cursor: pointer; font-family: inherit; font-size: 1.02em; white-space: nowrap; }
