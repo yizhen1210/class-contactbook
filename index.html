@@ -283,6 +283,15 @@
         </div>
     </div>
 
+    <div id="alertModal" class="modal-overlay">
+        <div class="modal-content">
+            <p class="modal-title" id="alertMsg"></p>
+            <div class="modal-actions">
+                <button class="btn-ok" onclick="closeAlert()">確定</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         if (localStorage.getItem('teacherHint') === '1') {
             document.addEventListener('DOMContentLoaded', () => {
@@ -519,7 +528,7 @@
             const dp = rocParts(); const now = new Date();
             const label = `${dp.y}/${dp.m}/${dp.d} ${now.getHours()}:${("0"+now.getMinutes()).slice(-2)}`;
             try{ await setDoc(bookRef,{hwEntries,chiPresets,matPresets,reviewEntries,rvChi,examEntries,wbSign,examTiming,extras,className,published:{items:buildItems(),date:dp,label}},{merge:true}); $('pubStamp').textContent="已發布 · "+label; }
-            catch(e){ alert("發布失敗，請確認已登入且 Firestore 規則允許寫入"); console.warn(e); }
+            catch(e){ window.showAlert("發布失敗，請確認已登入且 Firestore 規則允許寫入"); console.warn(e); }
         }
 
         let lastData = null;
@@ -553,10 +562,12 @@
 
         // 兩位老師共用同一組編輯帳號:email 寫死在這裡,老師只需輸入密碼。把下面換成你那組共用編輯帳號的 email。
         const SHARED_EMAIL = "annychen1210@gmail.com";
+        window.showAlert = (msg) => { $('alertMsg').textContent = msg; $('alertModal').style.display = 'flex'; };
+        window.closeAlert = () => { $('alertModal').style.display = 'none'; };
         window.checkPass = async () => {
-            const pw=$('passInput').value; if(!pw) return;
+            const pw=$('passInput').value; if(!pw){ window.showAlert('請輸入密碼'); return; }
             try{ await signInWithEmailAndPassword(auth,SHARED_EMAIL,pw); window.closeModal(); }
-            catch(err){ alert("密碼錯誤"); $('passInput').value=''; $('passInput').focus(); }
+            catch(err){ window.showAlert("密碼錯誤"); $('passInput').value=''; $('passInput').focus(); }
         };
         window.closeModal = () => { $('inputModal').style.display='none'; $('passInput').value=''; $('imeHint').style.display='none'; };
         window.openLogin = () => { $('passInput').value=''; $('imeHint').style.display='none'; $('inputModal').style.display='flex'; setTimeout(()=>$('passInput').focus(),50); };
@@ -638,7 +649,7 @@
         $('publishBtn').onclick = publish;
         $('copyLink').onclick = ()=>{
             const url=location.origin+location.pathname;
-            if(navigator.clipboard){ navigator.clipboard.writeText(url).then(()=>alert("已複製家長連結："+url),()=>prompt("家長連結：",url)); }
+            if(navigator.clipboard){ navigator.clipboard.writeText(url).then(()=>window.showAlert("已複製家長連結"),()=>prompt("家長連結：",url)); }
             else prompt("家長連結：",url);
         };
         $('editClassBtn').onclick = ()=>{
