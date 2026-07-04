@@ -149,6 +149,15 @@
         body:not(.ready) #className,
         body:not(.ready) #dateRow,
         body:not(.ready) #itemList { visibility: hidden; }
+        .modal { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(10,14,11,.6); z-index: 1100; padding: 20px; }
+        .modal.show { display: flex; }
+        .modal-box { background: #fff; color: #3f514a; border-radius: 16px; padding: 22px 22px 16px; max-width: 360px; width: 100%; box-shadow: 0 20px 55px rgba(0,0,0,.4); border-top: 4px solid var(--wood); }
+        .modal-msg { margin: 0 0 18px; font-size: 17px; line-height: 1.6; }
+        .modal-act { display: flex; gap: 10px; justify-content: flex-end; }
+        .modal-act button { font-family: inherit; cursor: pointer; border-radius: 50px; padding: 9px 26px; font-size: 16px; border: none; }
+        .m-no { background: transparent; border: 1px solid #c7bca0; color: #5a6660; }
+        .m-ok { background: var(--del-color); color: #fff; }
+        .m-ok:active, .m-no:active { transform: translateY(1px); }
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); align-items: center; justify-content: center; z-index: 1000; }
         .modal-content { background: #fff; border: 3px solid var(--wood); padding: 36px 44px; border-radius: 20px; text-align: center; box-shadow: 0 20px 55px rgba(0,0,0,0.4), 0 0 50px 8px rgba(232,130,12,0.13); width: min(520px, 90vw); }
         .modal-title { font-size: 1.4em; color: #3f514a; margin: 0 0 22px; }
@@ -283,11 +292,12 @@
         </div>
     </div>
 
-    <div id="alertModal" class="modal-overlay">
-        <div class="modal-content">
-            <p class="modal-title" id="alertMsg"></p>
-            <div class="modal-actions">
-                <button class="btn-ok" onclick="closeAlert()">確定</button>
+    <div class="modal" id="modal">
+        <div class="modal-box">
+            <p class="modal-msg" id="modal-msg"></p>
+            <div class="modal-act">
+                <button class="m-no" id="modal-no">取消</button>
+                <button class="m-ok" id="modal-ok">確定</button>
             </div>
         </div>
     </div>
@@ -528,7 +538,7 @@
             const dp = rocParts(); const now = new Date();
             const label = `${dp.y}/${dp.m}/${dp.d} ${now.getHours()}:${("0"+now.getMinutes()).slice(-2)}`;
             try{ await setDoc(bookRef,{hwEntries,chiPresets,matPresets,reviewEntries,rvChi,examEntries,wbSign,examTiming,extras,className,published:{items:buildItems(),date:dp,label}},{merge:true}); $('pubStamp').textContent="已發布 · "+label; }
-            catch(e){ window.showAlert("發布失敗，請確認已登入且 Firestore 規則允許寫入"); console.warn(e); }
+            catch(e){ ask("發布失敗，請確認已登入且 Firestore 規則允許寫入", {alert:true}); console.warn(e); }
         }
 
         let lastData = null;
@@ -562,12 +572,22 @@
 
         // 兩位老師共用同一組編輯帳號:email 寫死在這裡,老師只需輸入密碼。把下面換成你那組共用編輯帳號的 email。
         const SHARED_EMAIL = "annychen1210@gmail.com";
-        window.showAlert = (msg) => { $('alertMsg').textContent = msg; $('alertModal').style.display = 'flex'; };
-        window.closeAlert = () => { $('alertModal').style.display = 'none'; };
+        window.ask = (msg, opts) => {
+            const alertOnly = opts && opts.alert;
+            return new Promise(res => {
+                const m = $('modal'); $('modal-msg').textContent = msg;
+                const ok = $('modal-ok'), no = $('modal-no');
+                no.style.display = alertOnly ? 'none' : '';
+                m.classList.add('show');
+                const done = v => { m.classList.remove('show'); ok.onclick = null; no.onclick = null; no.style.display = ''; res(v); };
+                ok.onclick = () => done(true);
+                no.onclick = () => done(false);
+            });
+        };
         window.checkPass = async () => {
-            const pw=$('passInput').value; if(!pw){ window.showAlert('請輸入密碼'); return; }
+            const pw=$('passInput').value; if(!pw){ ask('請輸入密碼', {alert:true}); return; }
             try{ await signInWithEmailAndPassword(auth,SHARED_EMAIL,pw); window.closeModal(); }
-            catch(err){ window.showAlert("密碼錯誤"); $('passInput').value=''; $('passInput').focus(); }
+            catch(err){ ask("密碼錯誤", {alert:true}); $('passInput').value=''; $('passInput').focus(); }
         };
         window.closeModal = () => { $('inputModal').style.display='none'; $('passInput').value=''; $('imeHint').style.display='none'; };
         window.openLogin = () => { $('passInput').value=''; $('imeHint').style.display='none'; $('inputModal').style.display='flex'; setTimeout(()=>$('passInput').focus(),50); };
@@ -644,12 +664,12 @@
             const add=e.target.closest('[data-add]');
             if(add){ const p=add.dataset.add.split(':'); const a=arrOf(p[0]); if(a){ a.push(newEntry(p[0],p[1])); renderEditor(); saveConfig(); } return; }
         });
-        $('clearAll').onclick = ()=>{ if(confirm('要清除所有「勾選」嗎？（你設定的項目會保留，只是全部取消打勾，方便開始新的一天）')){ clearAllChecks(); renderEditor(); saveConfig(); } };
+        $('clearAll').onclick = async ()=>{ if(await ask('要清除所有「勾選」嗎？（你設定的項目會保留，只是全部取消打勾，方便開始新的一天）')){ clearAllChecks(); renderEditor(); saveConfig(); } };
         $('addExtra').onclick = ()=>{ extras.push(""); renderEditor(); saveConfig(); };
         $('publishBtn').onclick = publish;
         $('copyLink').onclick = ()=>{
             const url=location.origin+location.pathname;
-            if(navigator.clipboard){ navigator.clipboard.writeText(url).then(()=>window.showAlert("已複製家長連結"),()=>prompt("家長連結：",url)); }
+            if(navigator.clipboard){ navigator.clipboard.writeText(url).then(()=>ask("已複製家長連結", {alert:true}),()=>prompt("家長連結：",url)); }
             else prompt("家長連結：",url);
         };
         $('editClassBtn').onclick = ()=>{
