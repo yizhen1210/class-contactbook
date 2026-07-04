@@ -157,6 +157,8 @@
         .modal-act button { font-family: inherit; cursor: pointer; border-radius: 50px; padding: 9px 26px; font-size: 16px; border: none; }
         .m-no { background: transparent; border: 1px solid #c7bca0; color: #5a6660; }
         .m-ok { background: var(--del-color); color: #fff; }
+        .modal-input { display: block; width: 100%; margin: 0 0 18px; padding: 11px 16px; border: 2px solid var(--p-day); border-radius: 12px; font-family: inherit; font-size: 16px; outline: none; background: #fff; color: #2e3a35; box-sizing: border-box; }
+        .modal-input:focus { box-shadow: 0 0 10px 2px rgba(5,121,140,0.35); }
         .m-ok:active, .m-no:active { transform: translateY(1px); }
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); align-items: center; justify-content: center; z-index: 1000; }
         .modal-content { background: #fff; border: 3px solid var(--wood); padding: 36px 44px; border-radius: 20px; text-align: center; box-shadow: 0 20px 55px rgba(0,0,0,0.4), 0 0 50px 8px rgba(232,130,12,0.13); width: min(520px, 90vw); }
@@ -295,6 +297,7 @@
     <div class="modal" id="modal">
         <div class="modal-box">
             <p class="modal-msg" id="modal-msg"></p>
+            <input type="text" class="modal-input" id="modal-input" style="display:none;">
             <div class="modal-act">
                 <button class="m-no" id="modal-no">取消</button>
                 <button class="m-ok" id="modal-ok">確定</button>
@@ -573,15 +576,20 @@
         // 兩位老師共用同一組編輯帳號:email 寫死在這裡,老師只需輸入密碼。把下面換成你那組共用編輯帳號的 email。
         const SHARED_EMAIL = "annychen1210@gmail.com";
         window.ask = (msg, opts) => {
-            const alertOnly = opts && opts.alert;
+            opts = opts || {};
+            const alertOnly = opts.alert, isInput = opts.input;
             return new Promise(res => {
                 const m = $('modal'); $('modal-msg').textContent = msg;
-                const ok = $('modal-ok'), no = $('modal-no');
+                const ok = $('modal-ok'), no = $('modal-no'), inp = $('modal-input');
                 no.style.display = alertOnly ? 'none' : '';
+                inp.style.display = isInput ? 'block' : 'none';
+                if(isInput){ inp.value = opts.value || ''; }
                 m.classList.add('show');
-                const done = v => { m.classList.remove('show'); ok.onclick = null; no.onclick = null; no.style.display = ''; res(v); };
-                ok.onclick = () => done(true);
-                no.onclick = () => done(false);
+                if(isInput){ setTimeout(()=>{ inp.focus(); inp.select(); }, 50); }
+                const done = v => { m.classList.remove('show'); ok.onclick = null; no.onclick = null; inp.onkeydown = null; res(v); };
+                ok.onclick = () => done(isInput ? inp.value : true);
+                no.onclick = () => done(isInput ? null : false);
+                if(isInput){ inp.onkeydown = e => { if(e.key === 'Enter') ok.onclick(); if(e.key === 'Escape') no.onclick(); }; }
             });
         };
         window.checkPass = async () => {
@@ -672,8 +680,8 @@
             if(navigator.clipboard){ navigator.clipboard.writeText(url).then(()=>ask("已複製家長連結", {alert:true}),()=>prompt("家長連結：",url)); }
             else prompt("家長連結：",url);
         };
-        $('editClassBtn').onclick = ()=>{
-            const v=prompt('更新班級',className);
+        $('editClassBtn').onclick = async ()=>{
+            const v = await ask('更新班級', {input:true, value:className});
             if(v && v.trim()){ className=v.trim(); $('className').innerText=className; setDoc(bookRef,{className},{merge:true}); }
         };
         $('logoutBtn').onclick = ()=> signOut(auth);
