@@ -160,6 +160,7 @@
         .modal-input { display: block; width: 100%; margin: 0 0 24px; padding: 12px 18px; border: 2px solid var(--chalk-dim); border-radius: 14px; font-family: inherit; font-size: 1.1em; outline: none; text-align: center; background: #fff; color: #2e3a35; box-sizing: border-box; transition: box-shadow .2s; }
         .modal-input:focus { border-color: var(--p-day); box-shadow: 0 0 12px 3px rgba(5,121,142,0.5); }
         .modal-input::placeholder { color: #cdd3cb; }
+        #imeHint { margin: -14px 0 18px; font-size: 0.9em; color: var(--del-color); }
         .m-ok:active, .m-no:active { transform: translateY(1px); }
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); align-items: center; justify-content: center; z-index: 1000; }
         .modal-content { background: #fff; border: 3px solid var(--p-day); padding: 36px 44px; border-radius: 20px; text-align: center; box-shadow: 0 20px 55px rgba(0,0,0,0.4), 0 0 50px 8px rgba(5,121,142,0.13); width: min(520px, 90vw); }
@@ -287,7 +288,7 @@
         <div class="modal-content">
             <p class="modal-title">請輸入老師專屬密碼才能編輯：</p>
             <input type="password" id="passInput" placeholder="密碼" autocomplete="off">
-            <p id="imeHint" style="display:none; margin:-14px 0 18px; font-size:0.9em; color:var(--del-color);">偵測到中文輸入法，密碼請切換為英數</p>
+            <p id="imeHint" style="display:none;">偵測到中文輸入法，密碼請切換為英數</p>
             <div class="modal-actions">
                 <button class="btn-ok" onclick="checkPass()">確定</button>
                 <button class="btn-cancel" onclick="closeModal()">取消</button>
@@ -608,7 +609,7 @@
                 if(isTeacher){ signOut(auth); } else { window.openLogin(); }
             }
         });
-        $('passInput').addEventListener('keydown', e=>{ if(e.key==='Enter') window.checkPass(); });
+        $('passInput').addEventListener('keydown', e=>{ if(e.key==='Enter' && !e.isComposing && e.keyCode!==229) window.checkPass(); });
         const checkIME = ()=>{ $('imeHint').style.display = /[^\x00-\x7F]/.test($('passInput').value) ? 'block' : 'none'; };
         $('passInput').addEventListener('compositionstart', ()=>{ $('imeHint').style.display='block'; });
         $('passInput').addEventListener('input', e=>{ if(e.isComposing){ $('imeHint').style.display='block'; } else { checkIME(); } });
