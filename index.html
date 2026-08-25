@@ -100,6 +100,10 @@
         /* ===== 老師編輯區 ===== */
         .admin { background: var(--board-2); border: 1px solid rgba(244,241,232,0.25); border-radius: 14px; padding: 20px 22px; margin: 18px 0 4px; }
         .admin-title { color: #ffe6b0; font-size: 1.45em; margin: 0 0 4px; }
+        .date-picker { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 14px; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
+        .day-btn { flex: 0 0 auto; background: transparent; border: 2px solid var(--chalk-dim); color: var(--chalk); border-radius: 12px; padding: 7px 12px; font-family: inherit; font-size: 0.98em; cursor: pointer; display: flex; flex-direction: column; align-items: center; line-height: 1.25; min-width: 58px; }
+        .day-btn small { font-size: 0.78em; opacity: 0.85; }
+        .day-btn.on { background: var(--p-day); border-color: var(--p-day); color: #fff; }
         .admin-sub { color: var(--chalk-dim); font-size: 0.95em; margin: 0 0 16px; }
         .hw-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 0; border-bottom: 1px solid rgba(244,241,232,0.12); }
         .hw-on { width: 24px; height: 24px; accent-color: var(--p-day); flex: none; cursor: pointer; }
@@ -248,6 +252,8 @@
 
     <!-- 老師編輯區 -->
     <div id="adminArea" class="admin admin-only hidden">
+        <p class="admin-sub" style="margin-bottom:6px;">選擇日期（可預先排定後幾天的作業並投影；家長連結永遠只看到今天）</p>
+        <div id="datePicker" class="date-picker"></div>
         <button class="add-line" id="clearAll" style="margin-bottom:14px;">↺ 清除全部勾選（開始新的一天）</button>
         <h2 class="admin-title">書寫作業</h2>
         <p class="admin-sub">點科目展開；國語為固定選項，其餘科目可自行新增。勾選的才會列入聯絡簿</p>
@@ -347,6 +353,41 @@
         let extras = [];
         let examTiming = "auto";  // auto | 明 | 下一 | 下二
         let className = "508";
+        // ===== 多日期（預排未來作業）=====
+        function pad2(n){ return ("0"+n).slice(-2); }
+        function keyFromDate(d){ return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate()); }
+        function todayKey(){ return keyFromDate(new Date()); }
+        function dateFromKey(k){ return new Date(k+"T00:00:00"); }
+        function rocFromKey(k){ const d=dateFromKey(k); return {y:d.getFullYear()-1911, m:d.getMonth()+1, d:d.getDate(), w:WEEKDAYS[d.getDay()]}; }
+        let selectedDate = todayKey();   // 老師目前編輯/預覽/投影的日期
+        function resetDay(){
+            hwEntries=[];
+            chiPresets={ p1:{on:false,L:"",opt:"甲",a:"",b:""}, p2:{on:false,L:""}, p3:{on:false,opt:"甲",L:"",nStart:"",nEnd:""}, p4:{on:false,L:""}, p5:{on:false,L:""}, p6:{on:false,L:"",a:"",b:""} };
+            matPresets={ m1:{on:false,a:"",b:""}, m2:{on:false,a:"",b:""} };
+            reviewEntries=[]; rvChi={on:false,L:""}; examEntries=[];
+            wbSign={chi:{on:false,pStart:"",pEnd:""}, mat:{on:false,pStart:"",pEnd:""}};
+            examTiming="auto"; extras=[];
+        }
+        function dayConfigFor(key, data){
+            data = data || {}; const dm = data.days || {};
+            if(dm[key]) return dm[key];
+            if(key===todayKey()) return data;   // 舊資料：頂層設定＝今天
+            return null;
+        }
+        function loadDayInto(src){
+            resetDay();
+            if(src){
+                if(Array.isArray(src.hwEntries)) hwEntries=src.hwEntries;
+                if(src.chiPresets && typeof src.chiPresets==='object'){ Object.keys(chiPresets).forEach(p=>{ if(src.chiPresets[p]) Object.assign(chiPresets[p], src.chiPresets[p]); }); }
+                if(src.matPresets && typeof src.matPresets==='object'){ Object.keys(matPresets).forEach(p=>{ if(src.matPresets[p]) Object.assign(matPresets[p], src.matPresets[p]); }); }
+                if(Array.isArray(src.reviewEntries)) reviewEntries=src.reviewEntries;
+                if(src.rvChi && typeof src.rvChi==='object') Object.assign(rvChi, src.rvChi);
+                if(Array.isArray(src.examEntries)) examEntries=src.examEntries;
+                if(src.wbSign && typeof src.wbSign==='object') wbSign=Object.assign({chi:{on:false,pStart:"",pEnd:""},mat:{on:false,pStart:"",pEnd:""}}, src.wbSign);
+                if(typeof src.examTiming==='string') examTiming=src.examTiming;
+                if(Array.isArray(src.extras)) extras=src.extras;
+            }
+        }
         const openSet = {};       // 科目折疊狀態(介面用)
         const openSec = { wb:false, rv:false, ex:false };  // 大段落折疊狀態
 
@@ -382,7 +423,7 @@
         }
         function wbText(s,w){ let t="簽"+SUBJ_ABBR[s]+"習"; const pg=pTxt(w.pStart,w.pEnd); if(pg)t+=" "+pg; return t; }
         function reviewText(e){ const nm=sTrim(e.name); let base = (nm && nm.indexOf("卷")>=0) ? (SUBJ_ABBR[e.subj]+nm) : (nm || SUBJ_NAME[e.subj]); return base+"訂簽（　）分"; }
-        function timingWord(){ if(examTiming==="明")return"明"; if(examTiming==="下一")return"下(一)"; if(examTiming==="下二")return"下(二)"; return (new Date().getDay()===5)?"下(一)":"明"; }
+        function timingWord(){ if(examTiming==="明")return"明"; if(examTiming==="下一")return"下(一)"; if(examTiming==="下二")return"下(二)"; return (dateFromKey(selectedDate).getDay()===5)?"下(一)":"明"; }
         const EXAM_TYPES = ["小考","期中考","期末考"];
         const EXAM_TYPE_ORD = {"小考":0,"期中考":1,"期末考":2};
         function examText(e){ const nm=sTrim(e.name)||SUBJ_ABBR[e.subj]; const tw=(!e.type||e.type==="小考")?"考":e.type; let t=timingWord()+tw+nm; const ls=sTrim(e.lStart), le=sTrim(e.lEnd); if(ls){ t+=" L"+ls+(le?("～L"+le):""); } return t; }
@@ -538,42 +579,49 @@
         }
 
         let saveTimer = null;
-        function saveConfig(){ clearTimeout(saveTimer); saveTimer=setTimeout(()=>{ setDoc(bookRef,{hwEntries,chiPresets,matPresets,reviewEntries,rvChi,examEntries,wbSign,examTiming,extras,className},{merge:true}).catch(e=>console.warn(e)); },700); }
+        function saveConfig(){ clearTimeout(saveTimer); saveTimer=setTimeout(()=>{
+            const cfg={hwEntries,chiPresets,matPresets,reviewEntries,rvChi,examEntries,wbSign,examTiming,extras};
+            setDoc(bookRef,{ days:{[selectedDate]:cfg}, className },{merge:true}).catch(e=>console.warn(e));
+        },700); }
         async function publish(){
-            const dp = rocParts(); const now = new Date();
+            const dp = rocFromKey(selectedDate); const now = new Date();
             const label = `${dp.y}/${dp.m}/${dp.d} ${now.getHours()}:${("0"+now.getMinutes()).slice(-2)}`;
-            try{ await setDoc(bookRef,{hwEntries,chiPresets,matPresets,reviewEntries,rvChi,examEntries,wbSign,examTiming,extras,className,published:{items:buildItems(),date:dp,label}},{merge:true}); $('pubStamp').textContent="已發布 · "+label; }
+            const pub = {items:buildItems(), date:dp, label};
+            const cfg = {hwEntries,chiPresets,matPresets,reviewEntries,rvChi,examEntries,wbSign,examTiming,extras};
+            const payload = { days:{[selectedDate]:{...cfg, published:pub}}, className };
+            if(selectedDate===todayKey()) payload.published = pub;   // 舊家長頁相容：鏡射今天到頂層
+            try{ await setDoc(bookRef,payload,{merge:true}); $('pubStamp').textContent="已發布 · "+label; }
             catch(e){ ask("發布失敗，請確認已登入且 Firestore 規則允許寫入", {alert:true}); console.warn(e); }
         }
 
         let lastData = null;
-        function loadEditorFrom(data){
-            if(data){
-                if(Array.isArray(data.hwEntries)) hwEntries=data.hwEntries;
-                if(data.chiPresets && typeof data.chiPresets==='object'){ Object.keys(chiPresets).forEach(p=>{ if(data.chiPresets[p]) Object.assign(chiPresets[p], data.chiPresets[p]); }); }
-                if(data.matPresets && typeof data.matPresets==='object'){ Object.keys(matPresets).forEach(p=>{ if(data.matPresets[p]) Object.assign(matPresets[p], data.matPresets[p]); }); }
-                if(Array.isArray(data.reviewEntries)) reviewEntries=data.reviewEntries;
-                if(data.rvChi && typeof data.rvChi==='object') Object.assign(rvChi, data.rvChi);
-                if(Array.isArray(data.examEntries)) examEntries=data.examEntries;
-                if(data.wbSign && typeof data.wbSign==='object') wbSign=Object.assign({chi:{on:false,pStart:"",pEnd:""},mat:{on:false,pStart:"",pEnd:""}}, data.wbSign);
-                if(typeof data.examTiming==='string') examTiming=data.examTiming;
-                if(Array.isArray(data.extras)) extras=data.extras;
-            }
-            editorReady=true; renderEditor();
+        function currentViewKey(){ return isTeacher ? selectedDate : todayKey(); }
+        function viewPublished(){
+            const data = lastData || {}; const key = currentViewKey(); const dm = data.days || {};
+            if(dm[key] && dm[key].published) return dm[key].published;
+            if(key===todayKey() && data.published) return data.published;   // 舊資料相容
+            return null;
+        }
+        function renderBoard(){
+            const pub = viewPublished();
+            if(pub) renderPublished(pub);
+            else renderPublished(isTeacher ? {items:[], date:rocFromKey(currentViewKey())} : null);
+        }
+        function loadEditorForSelected(){
+            loadDayInto(dayConfigFor(selectedDate, lastData));
+            editorReady=true; renderEditor(); renderDatePicker(); updatePublishLabel(); renderBoard();
         }
         function markReady(){ document.body.classList.add('ready'); }
         setTimeout(markReady, 4000);
         onSnapshot(bookRef, (snap)=>{
             const data = snap.exists() ? snap.data() : null;
             lastData = data;
-            if(data){
-                if(data.className){ className=data.className; }
-                $('className').innerText=className;
-                renderPublished(data.published || null);
-                if(isTeacher && !editorReady) loadEditorFrom(data);
-            } else { $('className').innerText=className; renderPublished(null); }
+            if(data && data.className){ className=data.className; }
+            $('className').innerText=className;
+            renderBoard();
+            if(isTeacher && !editorReady) loadEditorForSelected();
             markReady();
-        }, err=>{ console.warn(err); $('className').innerText=className; renderPublished(null); markReady(); });
+        }, err=>{ console.warn(err); $('className').innerText=className; renderBoard(); markReady(); });
 
         // 兩位老師共用同一組編輯帳號:email 寫死在這裡,老師只需輸入密碼。把下面換成你那組共用編輯帳號的 email。
         const SHARED_EMAIL = "annychen1210@gmail.com";
@@ -615,16 +663,41 @@
         $('passInput').addEventListener('input', e=>{ if(e.isComposing){ $('imeHint').style.display='block'; } else { checkIME(); } });
         $('passInput').addEventListener('compositionend', checkIME);
 
+        function renderDatePicker(){
+            const el = $('datePicker'); if(!el) return;
+            let html='';
+            for(let i=0;i<7;i++){
+                const d=new Date(); d.setDate(d.getDate()+i);
+                const key=keyFromDate(d);
+                const top = i===0 ? '今天' : ('週'+WEEKDAYS[d.getDay()]);
+                html += `<button class="day-btn ${key===selectedDate?'on':''}" data-day="${key}">${top}<small>${d.getMonth()+1}/${d.getDate()}</small></button>`;
+            }
+            el.innerHTML = html;
+        }
+        function updatePublishLabel(){
+            const isToday = selectedDate===todayKey();
+            const d = dateFromKey(selectedDate);
+            $('publishBtn').textContent = isToday ? '發布今日聯絡簿' : `發布 ${d.getMonth()+1}/${d.getDate()} 聯絡簿`;
+            const cfg = dayConfigFor(selectedDate, lastData);
+            $('pubStamp').textContent = (cfg && cfg.published && cfg.published.label) ? ('已發布 · '+cfg.published.label) : '';
+        }
+        function selectDay(key){
+            if(key===selectedDate) return;
+            selectedDate=key; editorReady=false; loadEditorForSelected();
+        }
+
         function applyTeacherUI(){
             if(isTeacher){
                 localStorage.setItem('teacherHint','1');
                 document.documentElement.classList.add('teacher-mode');
                 document.querySelectorAll('.admin-only').forEach(e=>e.classList.remove('hidden'));
-                if(!editorReady){ if(lastData) loadEditorFrom(lastData); else renderEditor(); }
+                if(!editorReady){ if(lastData) loadEditorForSelected(); else { renderEditor(); renderDatePicker(); updatePublishLabel(); } }
+                renderBoard();
             } else {
                 localStorage.removeItem('teacherHint');
                 document.documentElement.classList.remove('teacher-mode');
                 document.querySelectorAll('.admin-only').forEach(e=>e.classList.add('hidden'));
+                selectedDate=todayKey(); renderBoard();
             }
         }
         onAuthStateChanged(auth, (user)=>{ isTeacher=!!user; applyTeacherUI(); });
@@ -651,6 +724,8 @@
             if(reRender) renderEditor();
         });
         document.addEventListener('click', e=>{
+            const dayBtn=e.target.closest('[data-day]');
+            if(dayBtn){ selectDay(dayBtn.dataset.day); return; }
             const secT=e.target.closest('.sec-title');
             if(secT){ const s=secT.dataset.sec; openSec[s]=!openSec[s]; renderEditor(); return; }
             // 清除欄位(收回圖示)
