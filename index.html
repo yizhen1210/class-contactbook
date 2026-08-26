@@ -100,8 +100,8 @@
         /* ===== 老師編輯區 ===== */
         .admin { background: var(--board-2); border: 1px solid rgba(244,241,232,0.25); border-radius: 14px; padding: 20px 22px; margin: 18px 0 4px; }
         .admin-title { color: #ffe6b0; font-size: 1.45em; margin: 0 0 4px; }
-        .date-picker { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 14px; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
-        .day-btn { flex: 0 0 auto; background: transparent; border: 2px solid var(--chalk-dim); color: var(--chalk); border-radius: 12px; padding: 7px 12px; font-family: inherit; font-size: 0.98em; cursor: pointer; display: flex; flex-direction: column; align-items: center; line-height: 1.25; min-width: 58px; }
+        .date-picker { display: grid; grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); gap: 8px; margin-bottom: 14px; }
+        .day-btn { background: transparent; border: 2px solid var(--chalk-dim); color: var(--chalk); border-radius: 12px; padding: 7px 6px; font-family: inherit; font-size: 0.95em; cursor: pointer; display: flex; flex-direction: column; align-items: center; line-height: 1.25; }
         .day-btn small { font-size: 0.78em; opacity: 0.85; }
         .day-btn.on { background: var(--p-day); border-color: var(--p-day); color: #fff; }
         .admin-sub { color: var(--chalk-dim); font-size: 0.95em; margin: 0 0 16px; }
@@ -665,14 +665,14 @@
 
         function renderDatePicker(){
             const el = $('datePicker'); if(!el) return;
-            let html='';
-            for(let i=0;i<7;i++){
-                const d=new Date(); d.setDate(d.getDate()+i);
-                const key=keyFromDate(d);
-                const top = i===0 ? '今天' : ('週'+WEEKDAYS[d.getDay()]);
-                html += `<button class="day-btn ${key===selectedDate?'on':''}" data-day="${key}">${top}<small>${d.getMonth()+1}/${d.getDate()}</small></button>`;
-            }
-            el.innerHTML = html;
+            const days=[new Date()];               // 今天固定顯示
+            const d=new Date(); let count=0;
+            while(count<10){ d.setDate(d.getDate()+1); const wd=d.getDay(); if(wd>=1 && wd<=5){ days.push(new Date(d)); count++; } }
+            el.innerHTML = days.map((dd,idx)=>{
+                const key=keyFromDate(dd);
+                const top = idx===0 ? '今天' : ('週'+WEEKDAYS[dd.getDay()]);
+                return `<button class="day-btn ${key===selectedDate?'on':''}" data-day="${key}">${top}<small>${dd.getMonth()+1}/${dd.getDate()}</small></button>`;
+            }).join('');
         }
         function updatePublishLabel(){
             const isToday = selectedDate===todayKey();
