@@ -348,6 +348,7 @@
         let matPresets = { m1:{on:false,a:"",b:""}, m2:{on:false,a:"",b:""} };
         let reviewEntries = [];   // {id,subj,on,name}
         let rvChi = {on:false, L:""};   // 國語固定:L幾聽考訂簽
+        let exChi = {on:false, L:""};   // 考試/國語固定:L幾聽寫
         let examEntries = [];     // {id,subj,on,type,name,lStart,lEnd}
         let wbSign = {chi:{on:false,pStart:"",pEnd:""}, mat:{on:false,pStart:"",pEnd:""}};
         let extras = [];
@@ -364,7 +365,7 @@
             hwEntries=[];
             chiPresets={ p1:{on:false,L:"",opt:"甲",a:"",b:""}, p2:{on:false,L:""}, p3:{on:false,opt:"甲",L:"",nStart:"",nEnd:""}, p4:{on:false,L:""}, p5:{on:false,L:""}, p6:{on:false,L:"",a:"",b:""} };
             matPresets={ m1:{on:false,a:"",b:""}, m2:{on:false,a:"",b:""} };
-            reviewEntries=[]; rvChi={on:false,L:""}; examEntries=[];
+            reviewEntries=[]; rvChi={on:false,L:""}; exChi={on:false,L:""}; examEntries=[];
             wbSign={chi:{on:false,pStart:"",pEnd:""}, mat:{on:false,pStart:"",pEnd:""}};
             examTiming="auto"; extras=[];
         }
@@ -382,6 +383,7 @@
                 if(src.matPresets && typeof src.matPresets==='object'){ Object.keys(matPresets).forEach(p=>{ if(src.matPresets[p]) Object.assign(matPresets[p], src.matPresets[p]); }); }
                 if(Array.isArray(src.reviewEntries)) reviewEntries=src.reviewEntries;
                 if(src.rvChi && typeof src.rvChi==='object') Object.assign(rvChi, src.rvChi);
+                if(src.exChi && typeof src.exChi==='object') Object.assign(exChi, src.exChi);
                 if(Array.isArray(src.examEntries)) examEntries=src.examEntries;
                 if(src.wbSign && typeof src.wbSign==='object') wbSign=Object.assign({chi:{on:false,pStart:"",pEnd:""},mat:{on:false,pStart:"",pEnd:""}}, src.wbSign);
                 if(typeof src.examTiming==='string') examTiming=src.examTiming;
@@ -440,6 +442,7 @@
                 if(sid==="chi" && rvChi.on && sTrim(rvChi.L)) out.push("L"+sTrim(rvChi.L)+"聽考訂簽（　）分");
                 reviewEntries.filter(e=>e.on && e.subj===sid).forEach(e=> out.push(reviewText(e)));
             });
+            if(exChi.on && sTrim(exChi.L)) out.push("L"+sTrim(exChi.L)+"聽寫");
             examEntries.filter(e=>e.on).slice().sort((a,b)=> ((EXAM_TYPE_ORD[a.type]??0)-(EXAM_TYPE_ORD[b.type]??0)) || ((SUBJ_ORDER[a.subj]??9)-(SUBJ_ORDER[b.subj]??9))).forEach(e=> out.push(examText(e)));
             extras.forEach(t=>{ if(t&&t.trim()) out.push(t.trim()); });
             return out;
@@ -492,6 +495,10 @@
             + `<span class="hw-static">L</span><input class="input hw-num" type="number" min="1" value="${esc(r.L||'')}" data-rvc="L">`
             + `<span class="hw-static">聽考訂簽（　）分</span>`
             + `<button class="iconbtn clear" data-clearrvc title="清除欄位">${IC_UNDO}</button></div>`; }
+        function exChiRow(){ const r=exChi; return `<div class="hw-row"><input type="checkbox" class="hw-on" data-excon ${r.on?'checked':''}>`
+            + `<span class="hw-static">L</span><input class="input hw-num" type="number" min="1" value="${esc(r.L||'')}" data-exc="L">`
+            + `<span class="hw-static">聽寫</span>`
+            + `<button class="iconbtn clear" data-clearexc title="清除欄位">${IC_UNDO}</button></div>`; }
         function chiPresetRows(){
             const c=chiPresets;
             const optSel=(p,cur)=>`<select class="hw-subj" data-cps="${p}:opt"><option value="甲" ${cur==='甲'?'selected':''}>甲</option><option value="乙" ${cur==='乙'?'selected':''}>乙</option></select>`;
@@ -518,17 +525,20 @@
                 const isChi = (sec==="hw" && sid==="chi");
                 const isMat = (sec==="hw" && sid==="mat");
                 const isRvChi = (sec==="rv" && sid==="chi");
+                const isExChi = (sec==="ex" && sid==="chi");
                 const ents = entriesArr.filter(e=>e.subj===sid);
                 const open = !!openSet[sec+":"+sid];
                 let cc = ents.filter(e=>e.on).length;
                 if(isChi) cc += Object.keys(chiPresets).filter(p=>chiPresets[p].on).length;
                 if(isMat) cc += Object.keys(matPresets).filter(p=>matPresets[p].on).length;
                 if(isRvChi && rvChi.on) cc += 1;
+                if(isExChi && exChi.on) cc += 1;
                 let body="";
                 if(open){
                     if(isChi) body += chiPresetRows();
                     if(isMat) body += matPresetRows();
                     if(isRvChi) body += rvChiRow();
+                    if(isExChi) body += exChiRow();
                     body += ents.map(e=>rowFn(sec,e)).join('') + `<button class="add-line-btn" data-add="${sec}:${sid}">＋ 新增</button>`;
                 }
                 return `<div class="acc ${open?'open':''}">`
@@ -539,7 +549,7 @@
         function secCount(sec){
             if(sec==="wb") return ["chi","mat"].filter(s=>wbSign[s]&&wbSign[s].on).length;
             if(sec==="rv") return reviewEntries.filter(e=>e.on).length + (rvChi.on?1:0);
-            if(sec==="ex") return examEntries.filter(e=>e.on).length;
+            if(sec==="ex") return examEntries.filter(e=>e.on).length + (exChi.on?1:0);
             return 0;
         }
         function secHead(sec, label){ const open=openSec[sec]; const c=secCount(sec); return `<h2 class="sec-title" data-sec="${sec}"><span class="acc-arrow">${open?'▾':'▸'}</span>${label}${c?`<span class="acc-badge">${c}</span>`:''}</h2>`; }
@@ -550,6 +560,7 @@
             ["chi","mat"].forEach(s=>{ if(wbSign[s]) wbSign[s].on=false; });
             reviewEntries.forEach(e=>e.on=false);
             rvChi.on=false;
+            exChi.on=false;
             examEntries.forEach(e=>e.on=false);
         }
         function renderEditor(){
@@ -580,14 +591,14 @@
 
         let saveTimer = null;
         function saveConfig(){ clearTimeout(saveTimer); saveTimer=setTimeout(()=>{
-            const cfg={hwEntries,chiPresets,matPresets,reviewEntries,rvChi,examEntries,wbSign,examTiming,extras};
+            const cfg={hwEntries,chiPresets,matPresets,reviewEntries,rvChi,exChi,examEntries,wbSign,examTiming,extras};
             setDoc(bookRef,{ days:{[selectedDate]:cfg}, className },{merge:true}).catch(e=>console.warn(e));
         },700); }
         async function publish(){
             const dp = rocFromKey(selectedDate); const now = new Date();
             const label = `${dp.y}/${dp.m}/${dp.d} ${now.getHours()}:${("0"+now.getMinutes()).slice(-2)}`;
             const pub = {items:buildItems(), date:dp, label};
-            const cfg = {hwEntries,chiPresets,matPresets,reviewEntries,rvChi,examEntries,wbSign,examTiming,extras};
+            const cfg = {hwEntries,chiPresets,matPresets,reviewEntries,rvChi,exChi,examEntries,wbSign,examTiming,extras};
             const payload = { days:{[selectedDate]:{...cfg, published:pub}}, className };
             if(selectedDate===todayKey()) payload.published = pub;   // 舊家長頁相容：鏡射今天到頂層
             try{ await setDoc(bookRef,payload,{merge:true}); $('pubStamp').textContent="已發布 · "+label; }
@@ -708,6 +719,7 @@
             if(t.dataset.cp){ const p=t.dataset.cp.split(':'); chiPresets[p[0]][p[1]]=t.value; saveConfig(); }
             if(t.dataset.mp){ const p=t.dataset.mp.split(':'); matPresets[p[0]][p[1]]=t.value; saveConfig(); }
             if(t.dataset.rvc){ rvChi[t.dataset.rvc]=t.value; saveConfig(); }
+            if(t.dataset.exc){ exChi[t.dataset.exc]=t.value; saveConfig(); }
             if(t.dataset.wb){ const p=t.dataset.wb.split(':'); wbSign[p[0]]=wbSign[p[0]]||{}; wbSign[p[0]][p[1]]=t.value; saveConfig(); }
             if(t.dataset.ex!=null){ extras[+t.dataset.ex]=t.value; saveConfig(); }
         });
@@ -718,6 +730,7 @@
             if(t.dataset.cpon){ chiPresets[t.dataset.cpon].on=t.checked; saveConfig(); reRender=true; }
             if(t.dataset.mpon){ matPresets[t.dataset.mpon].on=t.checked; saveConfig(); reRender=true; }
             if(t.hasAttribute && t.hasAttribute('data-rvcon')){ rvChi.on=t.checked; saveConfig(); reRender=true; }
+            if(t.hasAttribute && t.hasAttribute('data-excon')){ exChi.on=t.checked; saveConfig(); reRender=true; }
             if(t.dataset.on){ const p=t.dataset.on.split(':'); const en=findE(p[0],p[1]); if(en){ en.on=t.checked; saveConfig(); reRender=true; } }
             if(t.dataset.wbon){ const s=t.dataset.wbon; wbSign[s]=wbSign[s]||{}; wbSign[s].on=t.checked; saveConfig(); reRender=true; }
             if(t.id==="timingSel"){ examTiming=t.value; saveConfig(); }
@@ -739,6 +752,8 @@
             if(clrwb){ const s=clrwb.dataset.clearwb; if(wbSign[s]){ wbSign[s].pStart="";wbSign[s].pEnd=""; renderEditor(); saveConfig(); } return; }
             const clrrvc=e.target.closest('[data-clearrvc]');
             if(clrrvc){ rvChi.L=""; renderEditor(); saveConfig(); return; }
+            const clrexc=e.target.closest('[data-clearexc]');
+            if(clrexc){ exChi.L=""; renderEditor(); saveConfig(); return; }
             // 刪除整列(垃圾桶圖示)
             const del=e.target.closest('[data-del]');
             if(del){ const p=del.dataset.del.split(':'); const a=arrOf(p[0]); if(a){ const i=a.findIndex(x=>x.id===p[1]); if(i>=0){ a.splice(i,1); renderEditor(); saveConfig(); } } return; }
