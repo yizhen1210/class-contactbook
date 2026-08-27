@@ -414,13 +414,13 @@
             if(c.p3.on && sTrim(c.p3.L)) out.push("生"+(c.p3.opt||"甲")+"L"+sTrim(c.p3.L)+"("+rangeTxt(c.p3.nStart,c.p3.nEnd)+")＋造詞");
             if(c.p4.on && sTrim(c.p4.L)) out.push("L"+sTrim(c.p4.L)+"圈詞2次");
             if(c.p5.on && sTrim(c.p5.L)) out.push("L"+sTrim(c.p5.L)+"句型");
-            if(c.p6.on && sTrim(c.p6.L)){ let t="習L"+sTrim(c.p6.L); const pg=rangeTxt(c.p6.a,c.p6.b); if(pg) t+="p."+pg; out.push(t); }
+            if(c.p6.on && sTrim(c.p6.L)){ let t="國習L"+sTrim(c.p6.L); const pg=rangeTxt(c.p6.a,c.p6.b); if(pg) t+="p."+pg; out.push(t); }
             return out;
         }
         function matText(){
             const out=[], m=matPresets;
-            if(m.m1.on){ const pg=rangeTxt(m.m1.a,m.m1.b); if(pg) out.push("習p."+pg); }
-            if(m.m2.on){ const pg=rangeTxt(m.m2.a,m.m2.b); if(pg) out.push("簿p."+pg); }
+            if(m.m1.on){ const pg=rangeTxt(m.m1.a,m.m1.b); if(pg) out.push("數習p."+pg); }
+            if(m.m2.on){ const pg=rangeTxt(m.m2.a,m.m2.b); if(pg) out.push("數簿p."+pg); }
             return out;
         }
         function wbText(s,w){ let t="簽"+SUBJ_ABBR[s]+"習"; const pg=pTxt(w.pStart,w.pEnd); if(pg)t+=" "+pg; return t; }
@@ -442,7 +442,7 @@
                 if(sid==="chi" && rvChi.on && sTrim(rvChi.L)) out.push("L"+sTrim(rvChi.L)+"聽考訂簽（　）分");
                 reviewEntries.filter(e=>e.on && e.subj===sid).forEach(e=> out.push(reviewText(e)));
             });
-            if(exChi.on && sTrim(exChi.L)) out.push("L"+sTrim(exChi.L)+"聽寫");
+            if(exChi.on && sTrim(exChi.L)) out.push(timingWord()+"L"+sTrim(exChi.L)+"聽寫");
             examEntries.filter(e=>e.on).slice().sort((a,b)=> ((EXAM_TYPE_ORD[a.type]??0)-(EXAM_TYPE_ORD[b.type]??0)) || ((SUBJ_ORDER[a.subj]??9)-(SUBJ_ORDER[b.subj]??9))).forEach(e=> out.push(examText(e)));
             extras.forEach(t=>{ if(t&&t.trim()) out.push(t.trim()); });
             return out;
