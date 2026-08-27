@@ -442,7 +442,7 @@
                 if(sid==="chi" && rvChi.on && sTrim(rvChi.L)) out.push("L"+sTrim(rvChi.L)+"聽考訂簽（　）分");
                 reviewEntries.filter(e=>e.on && e.subj===sid).forEach(e=> out.push(reviewText(e)));
             });
-            if(exChi.on && sTrim(exChi.L)) out.push(timingWord()+"L"+sTrim(exChi.L)+"聽寫");
+            if(exChi.on && sTrim(exChi.L)) out.push(timingWord()+"考L"+sTrim(exChi.L)+"聽寫");
             examEntries.filter(e=>e.on).slice().sort((a,b)=> ((EXAM_TYPE_ORD[a.type]??0)-(EXAM_TYPE_ORD[b.type]??0)) || ((SUBJ_ORDER[a.subj]??9)-(SUBJ_ORDER[b.subj]??9))).forEach(e=> out.push(examText(e)));
             extras.forEach(t=>{ if(t&&t.trim()) out.push(t.trim()); });
             return out;
