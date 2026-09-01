@@ -345,7 +345,7 @@
         let editorReady = false;
         let hwEntries = [];   // 手動新增的作業 {id,subj,on,name,lesson,pStart,pEnd}
         let chiPresets = { p1:{on:false,L:"",opt:"甲",a:"",b:""}, p2:{on:false,L:""}, p3:{on:false,opt:"甲",L:"",nStart:"",nEnd:""}, p4:{on:false,L:""}, p5:{on:false,L:""}, p6:{on:false,L:"",a:"",b:""} };
-        let matPresets = { m1:{on:false,a:"",b:""}, m2:{on:false,a:"",b:""} };
+        let matPresets = { m1:{on:false,a:"",b:""}, m2:{on:false,a:"",b:""}, m3:{on:false,a:"",b:""} };
         let reviewEntries = [];   // {id,subj,on,name}
         let rvChi = {on:false, L:""};   // 國語固定:L幾聽考訂簽
         let exChi = {on:false, L:""};   // 考試/國語固定:L幾聽寫
@@ -364,7 +364,7 @@
         function resetDay(){
             hwEntries=[];
             chiPresets={ p1:{on:false,L:"",opt:"甲",a:"",b:""}, p2:{on:false,L:""}, p3:{on:false,opt:"甲",L:"",nStart:"",nEnd:""}, p4:{on:false,L:""}, p5:{on:false,L:""}, p6:{on:false,L:"",a:"",b:""} };
-            matPresets={ m1:{on:false,a:"",b:""}, m2:{on:false,a:"",b:""} };
+            matPresets={ m1:{on:false,a:"",b:""}, m2:{on:false,a:"",b:""}, m3:{on:false,a:"",b:""} };
             reviewEntries=[]; rvChi={on:false,L:""}; exChi={on:false,L:""}; examEntries=[];
             wbSign={chi:{on:false,pStart:"",pEnd:""}, mat:{on:false,pStart:"",pEnd:""}};
             examTiming="auto"; extras=[];
@@ -421,6 +421,7 @@
             const out=[], m=matPresets;
             if(m.m1.on){ const pg=rangeTxt(m.m1.a,m.m1.b); if(pg) out.push("數習p."+pg); }
             if(m.m2.on){ const pg=rangeTxt(m.m2.a,m.m2.b); if(pg) out.push("數簿p."+pg); }
+            if(m.m3.on){ const a=sTrim(m.m3.a), b=sTrim(m.m3.b); if(a) out.push("數8格"+a+(b?("-"+b):"")); }
             return out;
         }
         function wbText(s,w){ let t="簽"+SUBJ_ABBR[s]+"習"; const pg=pTxt(w.pStart,w.pEnd); if(pg)t+=" "+pg; return t; }
@@ -518,7 +519,8 @@
             const onbox=(p,on)=>`<input type="checkbox" class="hw-on" data-mpon="${p}" ${on?'checked':''}>`;
             const cl=(p)=>`<button class="iconbtn clear" data-clearmp="${p}" title="清除欄位">${IC_UNDO}</button>`;
             return `<div class="hw-row">${onbox('m1',m.m1.on)}<span class="hw-static">習 p.</span>${num('m1','a',m.m1.a)}<span class="hw-static">～</span>${num('m1','b',m.m1.b)}${cl('m1')}</div>`
-                + `<div class="hw-row">${onbox('m2',m.m2.on)}<span class="hw-static">簿 p.</span>${num('m2','a',m.m2.a)}<span class="hw-static">～</span>${num('m2','b',m.m2.b)}${cl('m2')}</div>`;
+                + `<div class="hw-row">${onbox('m2',m.m2.on)}<span class="hw-static">簿 p.</span>${num('m2','a',m.m2.a)}<span class="hw-static">～</span>${num('m2','b',m.m2.b)}${cl('m2')}</div>`
+                + `<div class="hw-row">${onbox('m3',m.m3.on)}<span class="hw-static">8格</span>${num('m3','a',m.m3.a)}<span class="hw-static">-</span>${num('m3','b',m.m3.b)}${cl('m3')}</div>`;
         }
         function accordion(sec, subjList, entriesArr, rowFn){
             return subjList.map(sid=>{
