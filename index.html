@@ -357,7 +357,7 @@
         let isTeacher = false;
         let editorReady = false;
         let hwEntries = [];   // 手動新增的作業 {id,subj,on,name,lesson,pStart,pEnd}
-        let chiPresets = { p1:{on:false,L:"",opt:"甲",a:"",b:""}, p2:{on:false,L:""}, p3:{on:false,opt:"甲",L:"",nStart:"",nEnd:""}, p4:{on:false,L:""}, p5:{on:false,L:""}, p6:{on:false,L:"",a:"",b:""} };
+        let chiPresets = { p1:{on:false,L:"",opt:"甲",a:"",b:""}, p2:{on:false,L:""}, p3:{on:false,opt:"甲",L:"",nStart:"",nEnd:""}, p7:{on:false,opt:"甲",L:"",a:"",b:""}, p4:{on:false,L:""}, p5:{on:false,L:""}, p6:{on:false,L:"",a:"",b:""} };
         let matPresets = { m1:{on:false,a:"",b:""}, m2:{on:false,a:"",b:""}, m3:{on:false,a:"",b:""} };
         let reviewEntries = [];   // {id,subj,on,name}
         let rvChi = {on:false, L:""};   // 國語固定:L幾聽考訂簽
@@ -376,7 +376,7 @@
         let selectedDate = todayKey();   // 老師目前編輯/預覽/投影的日期
         function resetDay(){
             hwEntries=[];
-            chiPresets={ p1:{on:false,L:"",opt:"甲",a:"",b:""}, p2:{on:false,L:""}, p3:{on:false,opt:"甲",L:"",nStart:"",nEnd:""}, p4:{on:false,L:""}, p5:{on:false,L:""}, p6:{on:false,L:"",a:"",b:""} };
+            chiPresets={ p1:{on:false,L:"",opt:"甲",a:"",b:""}, p2:{on:false,L:""}, p3:{on:false,opt:"甲",L:"",nStart:"",nEnd:""}, p7:{on:false,opt:"甲",L:"",a:"",b:""}, p4:{on:false,L:""}, p5:{on:false,L:""}, p6:{on:false,L:"",a:"",b:""} };
             matPresets={ m1:{on:false,a:"",b:""}, m2:{on:false,a:"",b:""}, m3:{on:false,a:"",b:""} };
             reviewEntries=[]; rvChi={on:false,L:""}; exChi={on:false,L:""}; examEntries=[];
             wbSign={chi:{on:false,pStart:"",pEnd:""}, mat:{on:false,pStart:"",pEnd:""}};
@@ -425,6 +425,7 @@
             if(c.p1.on && sTrim(c.p1.L)){ let t="讀L"+sTrim(c.p1.L)+"課文＋"+(c.p1.opt||"甲")+"本"; const pg=rangeTxt(c.p1.a,c.p1.b); if(pg) t+="p."+pg; out.push(t); }
             if(c.p2.on && sTrim(c.p2.L)) out.push("L"+sTrim(c.p2.L)+"預習單");
             if(c.p3.on && sTrim(c.p3.L)) out.push("生"+(c.p3.opt||"甲")+"L"+sTrim(c.p3.L)+"("+rangeTxt(c.p3.nStart,c.p3.nEnd)+")＋造詞");
+            if(c.p7 && c.p7.on && (sTrim(c.p7.L) || rangeTxt(c.p7.a,c.p7.b))){ let t="語"+(c.p7.opt||"甲"); if(sTrim(c.p7.L)) t+="L"+sTrim(c.p7.L); const pg=rangeTxt(c.p7.a,c.p7.b); if(pg) t+="p."+pg; out.push(t); }
             if(c.p4.on && sTrim(c.p4.L)) out.push("L"+sTrim(c.p4.L)+"圈詞2次");
             if(c.p5.on && sTrim(c.p5.L)) out.push("L"+sTrim(c.p5.L)+"句型");
             if(c.p6.on && sTrim(c.p6.L)){ let t="國習L"+sTrim(c.p6.L); const pg=rangeTxt(c.p6.a,c.p6.b); if(pg) t+="p."+pg; out.push(t); }
@@ -522,6 +523,7 @@
             return `<div class="hw-row">${onbox('p1',c.p1.on)}<span class="hw-static">讀L</span>${num('p1','L',c.p1.L)}<span class="hw-static">課文＋</span>${optSel('p1',c.p1.opt)}<span class="hw-static">本 p.</span>${num('p1','a',c.p1.a)}<span class="hw-static">～</span>${num('p1','b',c.p1.b)}${cl('p1')}</div>`
                 + `<div class="hw-row">${onbox('p2',c.p2.on)}<span class="hw-static">L</span>${num('p2','L',c.p2.L)}<span class="hw-static">預習單</span>${cl('p2')}</div>`
                 + `<div class="hw-row">${onbox('p3',c.p3.on)}<span class="hw-static">生</span>${optSel('p3',c.p3.opt)}<span class="hw-static">L</span>${num('p3','L',c.p3.L)}<span class="hw-static">(</span>${num('p3','nStart',c.p3.nStart)}<span class="hw-static">～</span>${num('p3','nEnd',c.p3.nEnd)}<span class="hw-static">)＋造詞</span>${cl('p3')}</div>`
+                + `<div class="hw-row">${onbox('p7',c.p7.on)}<span class="hw-static">語</span>${optSel('p7',c.p7.opt)}<span class="hw-static">L</span>${num('p7','L',c.p7.L)}<span class="hw-static">p.</span>${num('p7','a',c.p7.a)}<span class="hw-static">～</span>${num('p7','b',c.p7.b)}${cl('p7')}</div>`
                 + `<div class="hw-row">${onbox('p4',c.p4.on)}<span class="hw-static">L</span>${num('p4','L',c.p4.L)}<span class="hw-static">圈詞2次</span>${cl('p4')}</div>`
                 + `<div class="hw-row">${onbox('p5',c.p5.on)}<span class="hw-static">L</span>${num('p5','L',c.p5.L)}<span class="hw-static">句型</span>${cl('p5')}</div>`
                 + `<div class="hw-row">${onbox('p6',c.p6.on)}<span class="hw-static">習L</span>${num('p6','L',c.p6.L)}<span class="hw-static">p.</span>${num('p6','a',c.p6.a)}<span class="hw-static">～</span>${num('p6','b',c.p6.b)}${cl('p6')}</div>`;
