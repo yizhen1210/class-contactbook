@@ -140,6 +140,7 @@
         .iconbtn:hover { background: rgba(255,255,255,0.16); }
         .iconbtn.clear { color: #ffcf70; }
         .iconbtn.del { color: #ff8a6b; }
+        .iconbtn.copy { color: #7fe0ff; }
 
         .extra-row { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
         .extra-row .input { flex: 1 1 auto; min-width: 0; height: 44px; padding: 0 16px; font-size: 1.05em; }
@@ -358,6 +359,7 @@
         let editorReady = false;
         let hwEntries = [];   // 手動新增的作業 {id,subj,on,name,lesson,pStart,pEnd}
         let chiPresets = { p1:{on:false,L:"",opt:"甲",a:"",b:""}, p2:{on:false,L:""}, p3:{on:false,opt:"甲",L:"",nStart:"",nEnd:""}, p7:{on:false,opt:"甲",L:"",a:"",b:""}, p4:{on:false,L:""}, p5:{on:false,L:""}, p6:{on:false,L:"",a:"",b:""} };
+        let p7Copies = [];        // 語(甲/乙)複製列 {id,on,opt,L,a,b}
         let matPresets = { m1:{on:false,a:"",b:""}, m2:{on:false,a:"",b:""}, m3:{on:false,a:"",b:""} };
         let reviewEntries = [];   // {id,subj,on,name}
         let rvChi = {on:false, L:""};   // 國語固定:L幾聽考訂簽
@@ -377,6 +379,7 @@
         function resetDay(){
             hwEntries=[];
             chiPresets={ p1:{on:false,L:"",opt:"甲",a:"",b:""}, p2:{on:false,L:""}, p3:{on:false,opt:"甲",L:"",nStart:"",nEnd:""}, p7:{on:false,opt:"甲",L:"",a:"",b:""}, p4:{on:false,L:""}, p5:{on:false,L:""}, p6:{on:false,L:"",a:"",b:""} };
+            p7Copies=[];
             matPresets={ m1:{on:false,a:"",b:""}, m2:{on:false,a:"",b:""}, m3:{on:false,a:"",b:""} };
             reviewEntries=[]; rvChi={on:false,L:""}; exChi={on:false,L:""}; examEntries=[];
             wbSign={chi:{on:false,pStart:"",pEnd:""}, mat:{on:false,pStart:"",pEnd:""}};
@@ -393,6 +396,7 @@
             if(src){
                 if(Array.isArray(src.hwEntries)) hwEntries=src.hwEntries;
                 if(src.chiPresets && typeof src.chiPresets==='object'){ Object.keys(chiPresets).forEach(p=>{ if(src.chiPresets[p]) Object.assign(chiPresets[p], src.chiPresets[p]); }); }
+                if(Array.isArray(src.p7Copies)) p7Copies=src.p7Copies;
                 if(src.matPresets && typeof src.matPresets==='object'){ Object.keys(matPresets).forEach(p=>{ if(src.matPresets[p]) Object.assign(matPresets[p], src.matPresets[p]); }); }
                 if(Array.isArray(src.reviewEntries)) reviewEntries=src.reviewEntries;
                 if(src.rvChi && typeof src.rvChi==='object') Object.assign(rvChi, src.rvChi);
@@ -426,6 +430,7 @@
             if(c.p2.on && sTrim(c.p2.L)) out.push("L"+sTrim(c.p2.L)+"預習單");
             if(c.p3.on && sTrim(c.p3.L)) out.push("生"+(c.p3.opt||"甲")+"L"+sTrim(c.p3.L)+"("+rangeTxt(c.p3.nStart,c.p3.nEnd)+")＋造詞");
             if(c.p7 && c.p7.on && (sTrim(c.p7.L) || rangeTxt(c.p7.a,c.p7.b))){ let t="語"+(c.p7.opt||"甲"); if(sTrim(c.p7.L)) t+="L"+sTrim(c.p7.L); const pg=rangeTxt(c.p7.a,c.p7.b); if(pg) t+="p."+pg; out.push(t); }
+            p7Copies.forEach(cp=>{ if(cp.on && (sTrim(cp.L) || rangeTxt(cp.a,cp.b))){ let t="語"+(cp.opt||"甲"); if(sTrim(cp.L)) t+="L"+sTrim(cp.L); const pg=rangeTxt(cp.a,cp.b); if(pg) t+="p."+pg; out.push(t); } });
             if(c.p4.on && sTrim(c.p4.L)) out.push("L"+sTrim(c.p4.L)+"圈詞2次");
             if(c.p5.on && sTrim(c.p5.L)) out.push("L"+sTrim(c.p5.L)+"句型");
             if(c.p6.on && sTrim(c.p6.L)){ let t="國習L"+sTrim(c.p6.L); const pg=rangeTxt(c.p6.a,c.p6.b); if(pg) t+="p."+pg; out.push(t); }
@@ -488,6 +493,7 @@
 
         const IC_UNDO = `<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H9"/></svg>`;
         const IC_TRASH = `<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>`;
+        const IC_COPY = `<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect width="13" height="13" x="9" y="9" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
         function clearBtn(k){ return `<button class="iconbtn clear" data-clear="${k}" title="清除欄位">${IC_UNDO}</button>`; }
         function delBtn(k){ return `<button class="iconbtn del" data-del="${k}" title="刪除整列">${IC_TRASH}</button>`; }
         function pageFields(k,e){ return `<span class="hw-field">p.<input class="input hw-num" type="number" min="1" value="${esc(e.pStart||'')}" data-f="${k}:pStart"> ～ <input class="input hw-num" type="number" min="1" value="${esc(e.pEnd||'')}" data-f="${k}:pEnd"></span>`; }
@@ -520,10 +526,21 @@
             const num=(p,f,v)=>`<input class="input hw-num" type="number" min="1" value="${esc(v||'')}" data-cp="${p}:${f}">`;
             const onbox=(p,on)=>`<input type="checkbox" class="hw-on" data-cpon="${p}" ${on?'checked':''}>`;
             const cl=(p)=>`<button class="iconbtn clear" data-clearcp="${p}" title="清除欄位">${IC_UNDO}</button>`;
+            const copyBtn=(p)=>`<button class="iconbtn copy" data-copycp="${p}" title="複製一列">${IC_COPY}</button>`;
+            const extraP7 = p7Copies.map(cp=>{
+                const optCp = `<select class="hw-subj" data-cp7s="${cp.id}:opt"><option value="甲" ${cp.opt==='甲'?'selected':''}>甲</option><option value="乙" ${cp.opt==='乙'?'selected':''}>乙</option></select>`;
+                const numCp = (f,v)=>`<input class="input hw-num" type="number" min="1" value="${esc(v||'')}" data-cp7="${cp.id}:${f}">`;
+                return `<div class="hw-row"><input type="checkbox" class="hw-on" data-cp7on="${cp.id}" ${cp.on?'checked':''}>`
+                    + `<span class="hw-static">語</span>${optCp}<span class="hw-static">L</span>${numCp('L',cp.L)}`
+                    + `<span class="hw-static">p.</span>${numCp('a',cp.a)}<span class="hw-static">～</span>${numCp('b',cp.b)}`
+                    + `<button class="iconbtn clear" data-clearcp7="${cp.id}" title="清除欄位">${IC_UNDO}</button>`
+                    + `<button class="iconbtn del" data-delcp7="${cp.id}" title="刪除整列">${IC_TRASH}</button></div>`;
+            }).join('');
             return `<div class="hw-row">${onbox('p1',c.p1.on)}<span class="hw-static">讀L</span>${num('p1','L',c.p1.L)}<span class="hw-static">課文＋</span>${optSel('p1',c.p1.opt)}<span class="hw-static">本 p.</span>${num('p1','a',c.p1.a)}<span class="hw-static">～</span>${num('p1','b',c.p1.b)}${cl('p1')}</div>`
                 + `<div class="hw-row">${onbox('p2',c.p2.on)}<span class="hw-static">L</span>${num('p2','L',c.p2.L)}<span class="hw-static">預習單</span>${cl('p2')}</div>`
                 + `<div class="hw-row">${onbox('p3',c.p3.on)}<span class="hw-static">生</span>${optSel('p3',c.p3.opt)}<span class="hw-static">L</span>${num('p3','L',c.p3.L)}<span class="hw-static">(</span>${num('p3','nStart',c.p3.nStart)}<span class="hw-static">～</span>${num('p3','nEnd',c.p3.nEnd)}<span class="hw-static">)＋造詞</span>${cl('p3')}</div>`
-                + `<div class="hw-row">${onbox('p7',c.p7.on)}<span class="hw-static">語</span>${optSel('p7',c.p7.opt)}<span class="hw-static">L</span>${num('p7','L',c.p7.L)}<span class="hw-static">p.</span>${num('p7','a',c.p7.a)}<span class="hw-static">～</span>${num('p7','b',c.p7.b)}${cl('p7')}</div>`
+                + `<div class="hw-row">${onbox('p7',c.p7.on)}<span class="hw-static">語</span>${optSel('p7',c.p7.opt)}<span class="hw-static">L</span>${num('p7','L',c.p7.L)}<span class="hw-static">p.</span>${num('p7','a',c.p7.a)}<span class="hw-static">～</span>${num('p7','b',c.p7.b)}${cl('p7')}${copyBtn('p7')}</div>`
+                + extraP7
                 + `<div class="hw-row">${onbox('p4',c.p4.on)}<span class="hw-static">L</span>${num('p4','L',c.p4.L)}<span class="hw-static">圈詞2次</span>${cl('p4')}</div>`
                 + `<div class="hw-row">${onbox('p5',c.p5.on)}<span class="hw-static">L</span>${num('p5','L',c.p5.L)}<span class="hw-static">句型</span>${cl('p5')}</div>`
                 + `<div class="hw-row">${onbox('p6',c.p6.on)}<span class="hw-static">習L</span>${num('p6','L',c.p6.L)}<span class="hw-static">p.</span>${num('p6','a',c.p6.a)}<span class="hw-static">～</span>${num('p6','b',c.p6.b)}${cl('p6')}</div>`;
@@ -546,7 +563,7 @@
                 const ents = entriesArr.filter(e=>e.subj===sid);
                 const open = !!openSet[sec+":"+sid];
                 let cc = ents.filter(e=>e.on).length;
-                if(isChi) cc += Object.keys(chiPresets).filter(p=>chiPresets[p].on).length;
+                if(isChi) cc += Object.keys(chiPresets).filter(p=>chiPresets[p].on).length + p7Copies.filter(p=>p.on).length;
                 if(isMat) cc += Object.keys(matPresets).filter(p=>matPresets[p].on).length;
                 if(isRvChi && rvChi.on) cc += 1;
                 if(isExChi && exChi.on) cc += 1;
@@ -573,6 +590,7 @@
         function clearAllChecks(){
             hwEntries.forEach(e=>e.on=false);
             Object.values(chiPresets).forEach(p=>p.on=false);
+            p7Copies.forEach(p=>p.on=false);
             Object.values(matPresets).forEach(p=>p.on=false);
             ["chi","mat"].forEach(s=>{ if(wbSign[s]) wbSign[s].on=false; });
             reviewEntries.forEach(e=>e.on=false);
@@ -608,14 +626,14 @@
 
         let saveTimer = null;
         function saveConfig(){ clearTimeout(saveTimer); saveTimer=setTimeout(()=>{
-            const cfg={hwEntries,chiPresets,matPresets,reviewEntries,rvChi,exChi,examEntries,wbSign,examTiming,extras};
+            const cfg={hwEntries,chiPresets,p7Copies,matPresets,reviewEntries,rvChi,exChi,examEntries,wbSign,examTiming,extras};
             setDoc(bookRef,{ days:{[selectedDate]:cfg}, className },{merge:true}).catch(e=>console.warn(e));
         },700); }
         async function publish(){
             const dp = rocFromKey(selectedDate); const now = new Date();
             const label = `${dp.y}/${dp.m}/${dp.d} ${now.getHours()}:${("0"+now.getMinutes()).slice(-2)}`;
             const pub = {items:buildItems(), date:dp, label};
-            const cfg = {hwEntries,chiPresets,matPresets,reviewEntries,rvChi,exChi,examEntries,wbSign,examTiming,extras};
+            const cfg = {hwEntries,chiPresets,p7Copies,matPresets,reviewEntries,rvChi,exChi,examEntries,wbSign,examTiming,extras};
             const payload = { days:{[selectedDate]:{...cfg, published:pub}}, className };
             if(selectedDate===todayKey()) payload.published = pub;   // 舊家長頁相容：鏡射今天到頂層
             try{ await setDoc(bookRef,payload,{merge:true}); $('pubStamp').textContent="已發布 · "+label; }
@@ -734,6 +752,7 @@
             const t=e.target;
             if(t.dataset.f){ const p=t.dataset.f.split(':'); const en=findE(p[0],p[1]); if(en){ en[p[2]]=t.value; saveConfig(); } }
             if(t.dataset.cp){ const p=t.dataset.cp.split(':'); chiPresets[p[0]][p[1]]=t.value; saveConfig(); }
+            if(t.dataset.cp7){ const p=t.dataset.cp7.split(':'); const cp=p7Copies.find(x=>x.id===p[0]); if(cp){ cp[p[1]]=t.value; saveConfig(); } }
             if(t.dataset.mp){ const p=t.dataset.mp.split(':'); matPresets[p[0]][p[1]]=t.value; saveConfig(); }
             if(t.dataset.rvc){ rvChi[t.dataset.rvc]=t.value; saveConfig(); }
             if(t.dataset.exc){ exChi[t.dataset.exc]=t.value; saveConfig(); }
@@ -745,6 +764,9 @@
             if(t.dataset.f){ const p=t.dataset.f.split(':'); const en=findE(p[0],p[1]); if(en){ en[p[2]]=t.value; saveConfig(); } }
             if(t.dataset.cps){ const p=t.dataset.cps.split(':'); chiPresets[p[0]][p[1]]=t.value; saveConfig(); }
             if(t.dataset.cpon){ chiPresets[t.dataset.cpon].on=t.checked; saveConfig(); reRender=true; }
+            if(t.dataset.cp7){ const p=t.dataset.cp7.split(':'); const cp=p7Copies.find(x=>x.id===p[0]); if(cp){ cp[p[1]]=t.value; saveConfig(); } }
+            if(t.dataset.cp7s){ const p=t.dataset.cp7s.split(':'); const cp=p7Copies.find(x=>x.id===p[0]); if(cp){ cp[p[1]]=t.value; saveConfig(); } }
+            if(t.dataset.cp7on){ const cp=p7Copies.find(x=>x.id===t.dataset.cp7on); if(cp){ cp.on=t.checked; saveConfig(); reRender=true; } }
             if(t.dataset.mpon){ matPresets[t.dataset.mpon].on=t.checked; saveConfig(); reRender=true; }
             if(t.hasAttribute && t.hasAttribute('data-rvcon')){ rvChi.on=t.checked; saveConfig(); reRender=true; }
             if(t.hasAttribute && t.hasAttribute('data-excon')){ exChi.on=t.checked; saveConfig(); reRender=true; }
@@ -758,11 +780,21 @@
             if(dayBtn){ selectDay(dayBtn.dataset.day); return; }
             const secT=e.target.closest('.sec-title');
             if(secT){ const s=secT.dataset.sec; openSec[s]=!openSec[s]; renderEditor(); return; }
+            // 複製列
+            const copycp=e.target.closest('[data-copycp]');
+            if(copycp){
+                chiPresets.p7.on=true;
+                const baseOpt=chiPresets.p7.opt||'甲';
+                p7Copies.push({id:uid('p7c'),on:true,opt:baseOpt,L:'',a:'',b:''});
+                renderEditor(); saveConfig(); return;
+            }
             // 清除欄位(收回圖示)
             const clr=e.target.closest('[data-clear]');
             if(clr){ const p=clr.dataset.clear.split(':'); const en=findE(p[0],p[1]); if(en){ if(p[0]==="hw"){en.lesson="";en.pStart="";en.pEnd="";} else if(p[0]==="ex"){en.lStart="";en.lEnd="";} else if(p[0]==="rv"){en.name="";} renderEditor(); saveConfig(); } return; }
             const clrcp=e.target.closest('[data-clearcp]');
             if(clrcp){ const c=chiPresets[clrcp.dataset.clearcp]; ["L","a","b","nStart","nEnd"].forEach(f=>{ if(f in c) c[f]=""; }); renderEditor(); saveConfig(); return; }
+            const clrcp7=e.target.closest('[data-clearcp7]');
+            if(clrcp7){ const cp=p7Copies.find(x=>x.id===clrcp7.dataset.clearcp7); if(cp){ cp.L=""; cp.a=""; cp.b=""; renderEditor(); saveConfig(); } return; }
             const clrmp=e.target.closest('[data-clearmp]');
             if(clrmp){ const m=matPresets[clrmp.dataset.clearmp]; ["a","b"].forEach(f=>{ if(f in m) m[f]=""; }); renderEditor(); saveConfig(); return; }
             const clrwb=e.target.closest('[data-clearwb]');
@@ -772,6 +804,8 @@
             const clrexc=e.target.closest('[data-clearexc]');
             if(clrexc){ exChi.L=""; renderEditor(); saveConfig(); return; }
             // 刪除整列(垃圾桶圖示)
+            const delcp7=e.target.closest('[data-delcp7]');
+            if(delcp7){ p7Copies=p7Copies.filter(x=>x.id!==delcp7.dataset.delcp7); renderEditor(); saveConfig(); return; }
             const del=e.target.closest('[data-del]');
             if(del){ const p=del.dataset.del.split(':'); const a=arrOf(p[0]); if(a){ const i=a.findIndex(x=>x.id===p[1]); if(i>=0){ a.splice(i,1); renderEditor(); saveConfig(); } } return; }
             const delEx=e.target.closest('[data-del-ex]');
