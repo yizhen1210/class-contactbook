@@ -360,7 +360,7 @@
         let hwEntries = [];   // 手動新增的作業 {id,subj,on,name,lesson,pStart,pEnd}
         let chiPresets = { p1:{on:false,L:"",opt:"甲",a:"",b:""}, p2:{on:false,L:""}, p3:{on:false,opt:"甲",L:"",nStart:"",nEnd:""}, p7:{on:false,opt:"甲",L:"",a:"",b:""}, p4:{on:false,L:""}, p5:{on:false,L:""}, p6:{on:false,L:"",a:"",b:""} };
         let p7Copies = [];        // 語(甲/乙)複製列 {id,on,opt,L,a,b}
-        let matPresets = { m1:{on:false,a:"",b:""}, m2:{on:false,a:"",b:""}, m3:{on:false,a:"",b:""} };
+        let matPresets = { m1:{on:false,a:"",b:""}, m2:{on:false,a:"",b:""}, m3:{on:false,a:"",b:"",half:""} };
         let reviewEntries = [];   // {id,subj,on,name}
         let rvChi = {on:false, L:""};   // 國語固定:L幾聽考訂簽
         let exChi = {on:false, L:""};   // 考試/國語固定:L幾聽寫
@@ -380,7 +380,7 @@
             hwEntries=[];
             chiPresets={ p1:{on:false,L:"",opt:"甲",a:"",b:""}, p2:{on:false,L:""}, p3:{on:false,opt:"甲",L:"",nStart:"",nEnd:""}, p7:{on:false,opt:"甲",L:"",a:"",b:""}, p4:{on:false,L:""}, p5:{on:false,L:""}, p6:{on:false,L:"",a:"",b:""} };
             p7Copies=[];
-            matPresets={ m1:{on:false,a:"",b:""}, m2:{on:false,a:"",b:""}, m3:{on:false,a:"",b:""} };
+            matPresets={ m1:{on:false,a:"",b:""}, m2:{on:false,a:"",b:""}, m3:{on:false,a:"",b:"",half:""} };
             reviewEntries=[]; rvChi={on:false,L:""}; exChi={on:false,L:""}; examEntries=[];
             wbSign={chi:{on:false,pStart:"",pEnd:""}, mat:{on:false,pStart:"",pEnd:""}};
             examTiming="auto"; extras=[];
@@ -412,35 +412,44 @@
 
         function uid(p){ return p+Math.random().toString(36).slice(2,7); }
         function sTrim(v){ return (v!=null && String(v).trim()!=="") ? String(v).trim() : ""; }
-        function pagesText(a,b){
-            a=parseInt(a,10); b=parseInt(b,10);
-            if(isNaN(a)) return "";
-            if(isNaN(b) || b<=a) return ""+a;
-            if(b-a>60) return a+"～"+b;
-            const arr=[]; for(let i=a;i<=b;i++) arr.push(i);
-            return arr.join("、");
+        function pageRangeText(a,b){
+            a=sTrim(a); b=sTrim(b);
+            if(!a && !b) return "";
+            if(!a && b) a=b;
+            const na=parseInt(a,10);
+            const nb=parseInt(b,10);
+            if(!isNaN(na)){
+                if(!isNaN(nb) && b!=="" && nb!==na){
+                    const start=Math.min(na,nb);
+                    const end=Math.max(na,nb);
+                    const count=end-start+1;
+                    return start+"～"+end+"(共"+count+"頁)";
+                }
+                return na+"(共1頁)";
+            }
+            return a+(b?("～"+b):"");
         }
-        function pTxt(a,b){ const pg=pagesText(a,b); return pg ? ("p."+pg) : ""; }
+        function pTxt(a,b){ const pg=pageRangeText(a,b); return pg ? ("p."+pg) : ""; }
         function rangeTxt(a,b){ a=sTrim(a); b=sTrim(b); return a ? (a+(b?("～"+b):"")) : ""; }
         const SUBJ_ABBR = {chi:"國", mat:"數", sci:"自", soc:"社", eng:"英", etc:"其"};
         function hwText(e){ const pre=(e.subj==="etc")?"":SUBJ_ABBR[e.subj]; let t=pre+sTrim(e.name); const L=sTrim(e.lesson); if(L)t+=" L"+L; const pg=pTxt(e.pStart,e.pEnd); if(pg)t+=" "+pg; return t; }
         function chiText(){
             const out=[], c=chiPresets;
-            if(c.p1.on && sTrim(c.p1.L)){ let t="讀L"+sTrim(c.p1.L)+"課文＋"+(c.p1.opt||"甲")+"本"; const pg=rangeTxt(c.p1.a,c.p1.b); if(pg) t+="p."+pg; out.push(t); }
+            if(c.p1.on && sTrim(c.p1.L)){ let t="讀L"+sTrim(c.p1.L)+"課文＋"+(c.p1.opt||"甲")+"本"; const pg=pTxt(c.p1.a,c.p1.b); if(pg) t+=pg; out.push(t); }
             if(c.p2.on && sTrim(c.p2.L)) out.push("L"+sTrim(c.p2.L)+"預習單");
             if(c.p3.on && sTrim(c.p3.L)) out.push("生"+(c.p3.opt||"甲")+"L"+sTrim(c.p3.L)+"("+rangeTxt(c.p3.nStart,c.p3.nEnd)+")＋造詞");
-            if(c.p7 && c.p7.on && (sTrim(c.p7.L) || rangeTxt(c.p7.a,c.p7.b))){ let t="語"+(c.p7.opt||"甲"); if(sTrim(c.p7.L)) t+="L"+sTrim(c.p7.L); const pg=rangeTxt(c.p7.a,c.p7.b); if(pg) t+="p."+pg; out.push(t); }
-            p7Copies.forEach(cp=>{ if(cp.on && (sTrim(cp.L) || rangeTxt(cp.a,cp.b))){ let t="語"+(cp.opt||"甲"); if(sTrim(cp.L)) t+="L"+sTrim(cp.L); const pg=rangeTxt(cp.a,cp.b); if(pg) t+="p."+pg; out.push(t); } });
+            if(c.p7 && c.p7.on && (sTrim(c.p7.L) || pTxt(c.p7.a,c.p7.b))){ let t="語"+(c.p7.opt||"甲"); if(sTrim(c.p7.L)) t+="L"+sTrim(c.p7.L); const pg=pTxt(c.p7.a,c.p7.b); if(pg) t+=pg; out.push(t); }
+            p7Copies.forEach(cp=>{ if(cp.on && (sTrim(cp.L) || pTxt(cp.a,cp.b))){ let t="語"+(cp.opt||"甲"); if(sTrim(cp.L)) t+="L"+sTrim(cp.L); const pg=pTxt(cp.a,cp.b); if(pg) t+=pg; out.push(t); } });
             if(c.p4.on && sTrim(c.p4.L)) out.push("L"+sTrim(c.p4.L)+"圈詞2次");
             if(c.p5.on && sTrim(c.p5.L)) out.push("L"+sTrim(c.p5.L)+"句型");
-            if(c.p6.on && sTrim(c.p6.L)){ let t="國習L"+sTrim(c.p6.L); const pg=rangeTxt(c.p6.a,c.p6.b); if(pg) t+="p."+pg; out.push(t); }
+            if(c.p6.on && sTrim(c.p6.L)){ let t="國習L"+sTrim(c.p6.L); const pg=pTxt(c.p6.a,c.p6.b); if(pg) t+=pg; out.push(t); }
             return out;
         }
         function matText(){
             const out=[], m=matPresets;
-            if(m.m1.on){ const pg=rangeTxt(m.m1.a,m.m1.b); if(pg) out.push("數習p."+pg); }
-            if(m.m2.on){ const pg=rangeTxt(m.m2.a,m.m2.b); if(pg) out.push("數簿p."+pg); }
-            if(m.m3.on){ const a=sTrim(m.m3.a), b=sTrim(m.m3.b); if(a) out.push("數8格"+a+(b?("-"+b):"")); }
+            if(m.m1.on){ const pg=pTxt(m.m1.a,m.m1.b); if(pg) out.push("數習"+pg); }
+            if(m.m2.on){ const pg=pTxt(m.m2.a,m.m2.b); if(pg) out.push("數簿"+pg); }
+            if(m.m3.on){ const a=sTrim(m.m3.a), b=sTrim(m.m3.b), h=sTrim(m.m3.half); const numPart=a?(a+(b?("-"+b):"")):""; if(numPart||h) out.push("數8格"+numPart+h); }
             return out;
         }
         function wbText(s,w){ let t="簽"+SUBJ_ABBR[s]+"習"; const pg=pTxt(w.pStart,w.pEnd); if(pg)t+=" "+pg; return t; }
@@ -550,9 +559,11 @@
             const num=(p,f,v)=>`<input class="input hw-num" type="number" min="1" value="${esc(v||'')}" data-mp="${p}:${f}">`;
             const onbox=(p,on)=>`<input type="checkbox" class="hw-on" data-mpon="${p}" ${on?'checked':''}>`;
             const cl=(p)=>`<button class="iconbtn clear" data-clearmp="${p}" title="清除欄位">${IC_UNDO}</button>`;
+            const curH=(m.m3&&m.m3.half)||'';
+            const halfSel=`<select class="hw-subj" data-mps="m3:half"><option value="" ${!curH?'selected':''}>無</option><option value="(左半)" ${curH==='(左半)'?'selected':''}>(左半)</option><option value="(右半)" ${curH==='(右半)'?'selected':''}>(右半)</option></select>`;
             return `<div class="hw-row">${onbox('m1',m.m1.on)}<span class="hw-static">習 p.</span>${num('m1','a',m.m1.a)}<span class="hw-static">～</span>${num('m1','b',m.m1.b)}${cl('m1')}</div>`
                 + `<div class="hw-row">${onbox('m2',m.m2.on)}<span class="hw-static">簿 p.</span>${num('m2','a',m.m2.a)}<span class="hw-static">～</span>${num('m2','b',m.m2.b)}${cl('m2')}</div>`
-                + `<div class="hw-row">${onbox('m3',m.m3.on)}<span class="hw-static">8格</span>${num('m3','a',m.m3.a)}<span class="hw-static">-</span>${num('m3','b',m.m3.b)}${cl('m3')}</div>`;
+                + `<div class="hw-row">${onbox('m3',m.m3.on)}<span class="hw-static">8格</span>${num('m3','a',m.m3.a)}<span class="hw-static">-</span>${num('m3','b',m.m3.b)}${halfSel}${cl('m3')}</div>`;
         }
         function accordion(sec, subjList, entriesArr, rowFn){
             return subjList.map(sid=>{
@@ -754,6 +765,7 @@
             if(t.dataset.cp){ const p=t.dataset.cp.split(':'); chiPresets[p[0]][p[1]]=t.value; saveConfig(); }
             if(t.dataset.cp7){ const p=t.dataset.cp7.split(':'); const cp=p7Copies.find(x=>x.id===p[0]); if(cp){ cp[p[1]]=t.value; saveConfig(); } }
             if(t.dataset.mp){ const p=t.dataset.mp.split(':'); matPresets[p[0]][p[1]]=t.value; saveConfig(); }
+            if(t.dataset.mps){ const p=t.dataset.mps.split(':'); matPresets[p[0]][p[1]]=t.value; saveConfig(); }
             if(t.dataset.rvc){ rvChi[t.dataset.rvc]=t.value; saveConfig(); }
             if(t.dataset.exc){ exChi[t.dataset.exc]=t.value; saveConfig(); }
             if(t.dataset.wb){ const p=t.dataset.wb.split(':'); wbSign[p[0]]=wbSign[p[0]]||{}; wbSign[p[0]][p[1]]=t.value; saveConfig(); }
@@ -768,6 +780,7 @@
             if(t.dataset.cp7s){ const p=t.dataset.cp7s.split(':'); const cp=p7Copies.find(x=>x.id===p[0]); if(cp){ cp[p[1]]=t.value; saveConfig(); } }
             if(t.dataset.cp7on){ const cp=p7Copies.find(x=>x.id===t.dataset.cp7on); if(cp){ cp.on=t.checked; saveConfig(); reRender=true; } }
             if(t.dataset.mpon){ matPresets[t.dataset.mpon].on=t.checked; saveConfig(); reRender=true; }
+            if(t.dataset.mps){ const p=t.dataset.mps.split(':'); matPresets[p[0]][p[1]]=t.value; saveConfig(); }
             if(t.hasAttribute && t.hasAttribute('data-rvcon')){ rvChi.on=t.checked; saveConfig(); reRender=true; }
             if(t.hasAttribute && t.hasAttribute('data-excon')){ exChi.on=t.checked; saveConfig(); reRender=true; }
             if(t.dataset.on){ const p=t.dataset.on.split(':'); const en=findE(p[0],p[1]); if(en){ en.on=t.checked; saveConfig(); reRender=true; } }
@@ -796,7 +809,7 @@
             const clrcp7=e.target.closest('[data-clearcp7]');
             if(clrcp7){ const cp=p7Copies.find(x=>x.id===clrcp7.dataset.clearcp7); if(cp){ cp.L=""; cp.a=""; cp.b=""; renderEditor(); saveConfig(); } return; }
             const clrmp=e.target.closest('[data-clearmp]');
-            if(clrmp){ const m=matPresets[clrmp.dataset.clearmp]; ["a","b"].forEach(f=>{ if(f in m) m[f]=""; }); renderEditor(); saveConfig(); return; }
+            if(clrmp){ const m=matPresets[clrmp.dataset.clearmp]; ["a","b","half"].forEach(f=>{ if(f in m) m[f]=""; }); renderEditor(); saveConfig(); return; }
             const clrwb=e.target.closest('[data-clearwb]');
             if(clrwb){ const s=clrwb.dataset.clearwb; if(wbSign[s]){ wbSign[s].pStart="";wbSign[s].pEnd=""; renderEditor(); saveConfig(); } return; }
             const clrrvc=e.target.closest('[data-clearrvc]');
