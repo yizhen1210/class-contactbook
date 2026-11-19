@@ -412,7 +412,7 @@
 
         function uid(p){ return p+Math.random().toString(36).slice(2,7); }
         function sTrim(v){ return (v!=null && String(v).trim()!=="") ? String(v).trim() : ""; }
-        function pageRangeText(a,b){
+        function pageRangeText(a,b,withCount=true){
             a=sTrim(a); b=sTrim(b);
             if(!a && !b) return "";
             if(!a && b) a=b;
@@ -423,26 +423,26 @@
                     const start=Math.min(na,nb);
                     const end=Math.max(na,nb);
                     const count=end-start+1;
-                    return start+"～"+end+(count>=3 ? ("(共"+count+"頁)") : "");
+                    return start+"～"+end+(withCount && count>=3 ? ("(共"+count+"頁)") : "");
                 }
                 return ""+na;
             }
             return a+(b?("～"+b):"");
         }
-        function pTxt(a,b){ const pg=pageRangeText(a,b); return pg ? ("p."+pg) : ""; }
+        function pTxt(a,b,withCount=true){ const pg=pageRangeText(a,b,withCount); return pg ? ("p."+pg) : ""; }
         function rangeTxt(a,b){ a=sTrim(a); b=sTrim(b); return a ? (a+(b?("～"+b):"")) : ""; }
         const SUBJ_ABBR = {chi:"國", mat:"數", sci:"自", soc:"社", eng:"英", etc:"其"};
-        function hwText(e){ const pre=(e.subj==="etc")?"":SUBJ_ABBR[e.subj]; let t=pre+sTrim(e.name); const L=sTrim(e.lesson); if(L)t+=" L"+L; const pg=pTxt(e.pStart,e.pEnd); if(pg)t+=" "+pg; return t; }
+        function hwText(e){ const pre=(e.subj==="etc")?"":SUBJ_ABBR[e.subj]; let t=pre+sTrim(e.name); const L=sTrim(e.lesson); if(L)t+=" L"+L; const pg=pTxt(e.pStart,e.pEnd,e.subj!=="chi"); if(pg)t+=" "+pg; return t; }
         function chiText(){
             const out=[], c=chiPresets;
-            if(c.p1.on && sTrim(c.p1.L)){ let t="讀L"+sTrim(c.p1.L)+"課文＋"+(c.p1.opt||"甲")+"本"; const pg=pTxt(c.p1.a,c.p1.b); if(pg) t+=pg; out.push(t); }
+            if(c.p1.on && sTrim(c.p1.L)){ let t="讀L"+sTrim(c.p1.L)+"課文＋"+(c.p1.opt||"甲")+"本"; const pg=pTxt(c.p1.a,c.p1.b,false); if(pg) t+=pg; out.push(t); }
             if(c.p2.on && sTrim(c.p2.L)) out.push("L"+sTrim(c.p2.L)+"預習單");
             if(c.p3.on && sTrim(c.p3.L)) out.push("生"+(c.p3.opt||"甲")+"L"+sTrim(c.p3.L)+"("+rangeTxt(c.p3.nStart,c.p3.nEnd)+")＋造詞");
-            if(c.p7 && c.p7.on && (sTrim(c.p7.L) || pTxt(c.p7.a,c.p7.b))){ let t="語"+(c.p7.opt||"甲"); if(sTrim(c.p7.L)) t+="L"+sTrim(c.p7.L); const pg=pTxt(c.p7.a,c.p7.b); if(pg) t+=pg; out.push(t); }
-            p7Copies.forEach(cp=>{ if(cp.on && (sTrim(cp.L) || pTxt(cp.a,cp.b))){ let t="語"+(cp.opt||"甲"); if(sTrim(cp.L)) t+="L"+sTrim(cp.L); const pg=pTxt(cp.a,cp.b); if(pg) t+=pg; out.push(t); } });
+            if(c.p7 && c.p7.on && (sTrim(c.p7.L) || pTxt(c.p7.a,c.p7.b,false))){ let t="語"+(c.p7.opt||"甲"); if(sTrim(c.p7.L)) t+="L"+sTrim(c.p7.L); const pg=pTxt(c.p7.a,c.p7.b,false); if(pg) t+=pg; out.push(t); }
+            p7Copies.forEach(cp=>{ if(cp.on && (sTrim(cp.L) || pTxt(cp.a,cp.b,false))){ let t="語"+(cp.opt||"甲"); if(sTrim(cp.L)) t+="L"+sTrim(cp.L); const pg=pTxt(cp.a,cp.b,false); if(pg) t+=pg; out.push(t); } });
             if(c.p4.on && sTrim(c.p4.L)) out.push("L"+sTrim(c.p4.L)+"圈詞2次");
             if(c.p5.on && sTrim(c.p5.L)) out.push("L"+sTrim(c.p5.L)+"句型");
-            if(c.p6.on && sTrim(c.p6.L)){ let t="國習L"+sTrim(c.p6.L); const pg=pTxt(c.p6.a,c.p6.b); if(pg) t+=pg; out.push(t); }
+            if(c.p6.on && sTrim(c.p6.L)){ let t="國習L"+sTrim(c.p6.L); const pg=pTxt(c.p6.a,c.p6.b,false); if(pg) t+=pg; out.push(t); }
             return out;
         }
         function matText(){
@@ -452,7 +452,7 @@
             if(m.m3.on){ const a=sTrim(m.m3.a), b=sTrim(m.m3.b), h=sTrim(m.m3.half); const numPart=a?(a+(b?("-"+b):"")):""; if(numPart||h) out.push("數8格"+numPart+h); }
             return out;
         }
-        function wbText(s,w){ let t="簽"+SUBJ_ABBR[s]+"習"; const pg=pTxt(w.pStart,w.pEnd); if(pg)t+=" "+pg; return t; }
+        function wbText(s,w){ let t="簽"+SUBJ_ABBR[s]+"習"; const pg=pTxt(w.pStart,w.pEnd,s!=="chi"); if(pg)t+=" "+pg; return t; }
         function reviewText(e){ const nm=sTrim(e.name); let base = (nm && nm.indexOf("卷")>=0) ? (SUBJ_ABBR[e.subj]+nm) : (nm || SUBJ_NAME[e.subj]); return base+"訂簽（　）分"; }
         function timingWord(){ if(examTiming==="明")return"明"; if(examTiming==="下一")return"下(一)"; if(examTiming==="下二")return"下(二)"; return (dateFromKey(selectedDate).getDay()===5)?"下(一)":"明"; }
         const EXAM_TYPES = ["小考","期中考","期末考"];
