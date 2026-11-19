@@ -423,9 +423,9 @@
                     const start=Math.min(na,nb);
                     const end=Math.max(na,nb);
                     const count=end-start+1;
-                    return start+"～"+end+"(共"+count+"頁)";
+                    return start+"～"+end+(count>=3 ? ("(共"+count+"頁)") : "");
                 }
-                return na+"(共1頁)";
+                return ""+na;
             }
             return a+(b?("～"+b):"");
         }
